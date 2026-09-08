@@ -1,4 +1,3 @@
-// components/ToastRenderer.tsx
 import { useEffect } from "react";
 import { FiAlertCircle, FiX } from "react-icons/fi";
 import { useToastStore } from "./stores/useToastStore";

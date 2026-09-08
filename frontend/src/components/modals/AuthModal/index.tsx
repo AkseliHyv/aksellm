@@ -4,8 +4,7 @@ import LogInView from "./views/LogInView";
 import RegisterView from "./views/RegisterView";
 import { useModalStore } from "../../../stores/useModalStore";
 import { useUserStore } from "../../../stores/useUserStore";
-import { authService } from "../../../services/authService";
-import { llmService } from "../../../services/llmService";
+import { authService, llmService } from "../../../services";
 import { useLLMStore } from "../../../stores/useLLMStore";
 
 function AuthModal() {
@@ -15,34 +14,37 @@ function AuthModal() {
     const [view, setView] = useState<"login" | "register">("login");
     const [error, setError] = useState<string | null>(null);
 
-    const handleLoginSubmit = async (data: { email: string; password: string }) => {
-        try {
-            setError(null);
-            const res = await authService.login(data);
-            setProfile(res.user);
-            const llms = await llmService.getAll();
-            setLLMs(llms);
-            closeModal();
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Login failed");
-        }
+    const handleLoginSubmit = (data: { email: string; password: string }) => {
+        setError(null);
+        authService.login(data)
+            .then((res) => {
+                setProfile(res.user);
+                return llmService.getAll();
+            })
+            .then((llms) => {
+                setLLMs(llms);
+                closeModal();
+            })
+            .catch((e) => {
+                setError(e instanceof Error ? e.message : "Login failed");
+            });
     };
 
-    const handleRegisterSubmit = async (data: { username: string; email: string; password: string }) => {
-        try {
-            setError(null);
-            const res = await authService.register(data);
-            setProfile(res.user);
-            setLLMs([]);
-            closeModal();
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Registration failed");
-        }
+    const handleRegisterSubmit = (data: { username: string; email: string; password: string }) => {
+        setError(null);
+        authService.register(data)
+            .then((res) => {
+                setProfile(res.user);
+                setLLMs([]);
+                closeModal();
+            })
+            .catch((e) => {
+                setError(e instanceof Error ? e.message : "Registration failed");
+            });
     };
 
     return (
         <Modal isOpen={activeModal === "auth"} size="md">
-            {/* Header */}
             <div className="relative p-6 pb-4 border-b border-line/50">
                 <h2 className="text-xl font-bold text-ink">
                     {view === "login" ? "Log In" : "Create an Account"}
@@ -50,7 +52,6 @@ function AuthModal() {
                 <div className="h-0.5 w-20 bg-linear-to-r from-line-strong to-transparent mt-2 rounded-full" />
             </div>
 
-            {/* Form */}
             <form onSubmit={(e: FormEvent) => e.preventDefault()} className="relative p-6 space-y-5">
                 {error && (
                     <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2">

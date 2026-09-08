@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { FiType, FiCpu, FiChevronDown } from "react-icons/fi";
+import { FiType, FiCpu } from "react-icons/fi";
 import Modal from "../ui/Modal";
+import AdvancedLLMConfigFields, { labelCls } from "./LLMConfigFields";
 import { useModalStore } from "../../stores/useModalStore";
 import { useLLMStore } from "../../stores/useLLMStore";
-import { llmService } from "../../services/llmService";
-import { ProviderModels } from "../../domain/enums/ProviderModels";
-import { LLMProvider } from "../../domain/enums/LLMProvider";
+import { llmService } from "../../services";
+import { LLMProvider, ProviderModels } from "../../domain";
 import type { LLMConfig } from "../../domain";
 
 const DEFAULT_CONFIG: LLMConfig = {
@@ -37,38 +37,31 @@ function LLMCreateModal() {
     const patch = (partial: Partial<LLMConfig>) =>
         setConfig((prev) => ({ ...prev, ...partial }));
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim() || !config.model) return;
 
-        try {
-            setError(null);
-            const llm = await llmService.create({ 
-                name: name.trim(), 
-                config
+        setError(null);
+        llmService.create({ name: name.trim(), config })
+            .then((llm) => {
+                addLLM(llm);
+                setName("");
+                setConfig({ ...DEFAULT_CONFIG, model: availableModels[0] ?? "" });
+                setAdvancedOpen(false);
+                closeModal();
+            })
+            .catch((e) => {
+                setError(e instanceof Error ? e.message : "Failed to create LLM");
             });
-            addLLM(llm);
-            setName("");
-            setConfig({ ...DEFAULT_CONFIG, model: availableModels[0] ?? "" });
-            setAdvancedOpen(false);
-            closeModal();
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to create LLM");
-        }
     };
-
-    const inputCls = "w-full bg-surface/50 text-ink px-3 py-2 rounded-lg border border-line focus:outline-none focus:border-line-active focus:ring-2 focus:ring-line-active/20 transition-all placeholder:text-ink-faint text-sm";
-    const labelCls = "block text-ink-muted text-sm font-medium";
 
     return (
         <Modal isOpen={activeModal === "llmCreate"} onClose={closeModal} size="md">
-            {/* Header */}
             <div className="relative p-6 pb-4 border-b border-line/50">
                 <h2 className="text-xl font-bold text-ink">Create a new LLM model</h2>
                 <div className="h-0.5 w-20 bg-linear-to-r from-line-strong to-transparent mt-2 rounded-full" />
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="relative p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-5rem)]">
                 {error && (
                     <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2">
@@ -76,7 +69,6 @@ function LLMCreateModal() {
                     </p>
                 )}
 
-                {/* Name Input */}
                 <div className="space-y-2">
                     <label htmlFor="name" className={labelCls}>Name</label>
                     <div className="relative">
@@ -93,7 +85,6 @@ function LLMCreateModal() {
                     </div>
                 </div>
 
-                {/* Model Select */}
                 <div className="space-y-2">
                     <label htmlFor="model" className={labelCls}>Model</label>
                     <div className="relative">
@@ -116,178 +107,13 @@ function LLMCreateModal() {
                     </div>
                 </div>
 
-                {/* Advanced Settings */}
-                <div className="rounded-lg border border-line/60 overflow-hidden">
-                    <button
-                        type="button"
-                        onClick={() => setAdvancedOpen((o) => !o)}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-raised/40 hover:bg-raised/70 transition-colors text-sm font-medium text-ink-muted hover:text-ink cursor-pointer"
-                        aria-expanded={advancedOpen}
-                    >
-                        <span>Advanced settings</span>
-                        <FiChevronDown
-                            size={16}
-                            className={`text-ink-subtle transition-transform duration-200 ${advancedOpen ? "rotate-180" : ""}`}
-                        />
-                    </button>
+                <AdvancedLLMConfigFields
+                    config={config}
+                    onChange={patch}
+                    isOpen={advancedOpen}
+                    onToggle={() => setAdvancedOpen((o) => !o)}
+                />
 
-                    {advancedOpen && (
-                        <div className="p-4 space-y-4 border-t border-line/60 bg-surface/20">
-
-                            {/* Temperature & Max Tokens */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="temperature" className={labelCls}>Temperature</label>
-                                    <input
-                                        id="temperature"
-                                        type="number" min={0} max={2} step={0.05}
-                                        value={config.temperature}
-                                        placeholder="0.7"
-                                        onChange={(e) => patch({ temperature: e.target.value === "" ? 0.7 : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="maxTokens" className={labelCls}>Max Tokens</label>
-                                    <input
-                                        id="maxTokens"
-                                        type="number" min={1} step={1}
-                                        value={config.maxTokens}
-                                        placeholder="200"
-                                        onChange={(e) => patch({ maxTokens: e.target.value === "" ? 200 : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Top P & Top K */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="topP" className={labelCls}>Top P</label>
-                                    <input
-                                        id="topP"
-                                        type="number" min={0} max={1} step={0.01}
-                                        value={config.topP ?? ""}
-                                        placeholder="default"
-                                        onChange={(e) => patch({ topP: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="topK" className={labelCls}>Top K</label>
-                                    <input
-                                        id="topK"
-                                        type="number" min={0} step={1}
-                                        value={config.topK ?? ""}
-                                        placeholder="default"
-                                        onChange={(e) => patch({ topK: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Frequency, Presence & Repeat Penalty */}
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="frequencyPenalty" className={labelCls}>Freq. Penalty</label>
-                                    <input
-                                        id="frequencyPenalty"
-                                        type="number" min={-2} max={2} step={0.01}
-                                        value={config.frequencyPenalty ?? ""}
-                                        placeholder="default"
-                                        onChange={(e) => patch({ frequencyPenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="presencePenalty" className={labelCls}>Pres. Penalty</label>
-                                    <input
-                                        id="presencePenalty"
-                                        type="number" min={-2} max={2} step={0.01}
-                                        value={config.presencePenalty ?? ""}
-                                        placeholder="default"
-                                        onChange={(e) => patch({ presencePenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="repeatPenalty" className={labelCls}>Repeat Penalty</label>
-                                    <input
-                                        id="repeatPenalty"
-                                        type="number" min={0} step={0.01}
-                                        value={config.repeatPenalty ?? ""}
-                                        placeholder="default"
-                                        onChange={(e) => patch({ repeatPenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                        className={inputCls}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Seed */}
-                            <div className="space-y-1.5">
-                                <label htmlFor="seed" className={labelCls}>Seed</label>
-                                <input
-                                    id="seed"
-                                    type="number" step={1}
-                                    value={config.seed ?? ""}
-                                    placeholder="Random"
-                                    onChange={(e) => patch({ seed: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                    className={inputCls}
-                                />
-                            </div>
-
-                            {/* Stream toggle */}
-                            <div className="flex items-center justify-between py-1">
-                                <label htmlFor="stream" className={labelCls}>Stream</label>
-                                <button
-                                    id="stream"
-                                    type="button"
-                                    role="switch"
-                                    aria-checked={config.stream}
-                                    onClick={() => patch({ stream: !config.stream })}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none cursor-pointer ${config.stream ? "bg-ink-faint" : "bg-hover"}`}
-                                >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-ink shadow transition-transform duration-200 ${config.stream ? "translate-x-6" : "translate-x-1"}`} />
-                                </button>
-                            </div>
-
-                            {/* Stop Sequences */}
-                            <div className="space-y-1.5">
-                                <label htmlFor="stopSequences" className={labelCls}>
-                                    Stop Sequences
-                                    <span className="ml-1.5 text-ink-faint font-normal">(comma-separated)</span>
-                                </label>
-                                <input
-                                    id="stopSequences"
-                                    type="text"
-                                    value={config.stopSequences?.join(", ") ?? ""}
-                                    placeholder='e.g.  \n, ###, <end>'
-                                    onChange={(e) => {
-                                        const seqs = e.target.value.split(",").map((s) => s.trim()).filter(Boolean);
-                                        patch({ stopSequences: seqs.length ? seqs : undefined });
-                                    }}
-                                    className={inputCls}
-                                />
-                            </div>
-
-                            {/* System Prompt */}
-                            <div className="space-y-1.5">
-                                <label htmlFor="systemPrompt" className={labelCls}>System Prompt</label>
-                                <textarea
-                                    id="systemPrompt"
-                                    rows={4}
-                                    value={config.systemPrompt ?? ""}
-                                    placeholder="Optional system prompt…"
-                                    onChange={(e) => patch({ systemPrompt: e.target.value || undefined })}
-                                    className={`${inputCls} resize-none`}
-                                />
-                            </div>
-
-                        </div>
-                    )}
-                </div>
-
-                {/* Buttons */}
                 <div className="flex justify-end gap-3 pt-4">
                     <button
                         type="button"

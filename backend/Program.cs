@@ -1,6 +1,6 @@
+using System.Text.Json.Serialization;
 using backend.Filters;
 using backend.Services;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,9 +15,9 @@ builder.Services.AddCors(options =>
     options.AddPolicy(corsPolicy, policy =>
     {
         policy.WithOrigins(builder.Configuration["AllowedOrigins"]!.Split(","))
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 

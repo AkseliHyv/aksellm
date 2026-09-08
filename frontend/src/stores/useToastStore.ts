@@ -1,4 +1,3 @@
-// stores/useToastStore.ts
 import { create } from "zustand";
 
 type Toast = {

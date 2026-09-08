@@ -13,7 +13,6 @@ function LogInView({ onChangeState, onSubmit }: LogInViewProps) {
 
     return (
         <>
-            {/* Email Input */}
             <div className="space-y-2">
                 <label htmlFor="email" className="block text-ink-muted text-sm font-medium">Email</label>
                 <div className="relative">
@@ -29,7 +28,6 @@ function LogInView({ onChangeState, onSubmit }: LogInViewProps) {
                 </div>
             </div>
 
-            {/* Password Input */}
             <div className="space-y-2">
                 <label htmlFor="password" className="block text-ink-muted text-sm font-medium">Password</label>
                 <div className="relative">
@@ -53,7 +51,6 @@ function LogInView({ onChangeState, onSubmit }: LogInViewProps) {
                 </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex relative justify-end gap-3 pt-4">
                 <button
                     type="button"

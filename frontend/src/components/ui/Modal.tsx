@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { twMerge } from "tailwind-merge";
+import clsx from "clsx";
 
 
 type ModalProps = {
@@ -30,17 +32,19 @@ function Modal({ isOpen, onClose, size = "md", children }: ModalProps) {
 
     return createPortal(
         <div className="fixed inset-0 flex justify-center items-center z-50">
-            {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-backdrop opacity-80 backdrop-blur-sm"
                 onClick={onClose}
             />
 
-            {/* Modal container */}
             <div
-                className={`relative bg-linear-to-b from-raised via-raised to-surface w-full ${sizes[size]} mx-4 rounded-xl shadow-2xl border border-line/50 overflow-hidden`}
+                className={twMerge(
+                    clsx(
+                        "relative bg-linear-to-b from-raised via-raised to-surface w-full mx-4 rounded-xl shadow-2xl border border-line/50 overflow-hidden",
+                        sizes[size]
+                    )
+                )}
             >
-                {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-linear-to-br from-line/10 to-transparent pointer-events-none" />
 
                 {children}

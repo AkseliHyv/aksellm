@@ -1,15 +1,11 @@
-using backend.Helpers;
-using backend.Models.Domain;
-using backend.Models.Common;
-using backend.Models.DTOs.LLM;
-using Supabase.Gotrue;
 using backend.Exceptions;
-using System.Collections.Generic;
-using System.Text.Json;
+using backend.Helpers;
+using backend.Models.Common;
+using backend.Models.Domain;
+using backend.Models.DTOs.LLM;
 
 namespace backend.Services
 {
-    // Defines CRUD operations for user-owned LLM configurations
     public interface ILLMService
     {
         Task<LLMResponseDto> GetAllLLMsAsync(string token, string refreshToken);
@@ -32,7 +28,6 @@ namespace backend.Services
             if (user == null)
                 throw new UnauthorizedAccessException("Invalid or expired session");
 
-            // Fetch only LLMs belonging to the current user (max amount is 15)
             var result = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id)
                 .Limit(15)
@@ -40,15 +35,12 @@ namespace backend.Services
 
             var response = new LLMResponseDto
             {
-                LLMs = result.Models.Select(llm =>
+                LLMs = result.Models.Select(llm => new LLMModel
                 {
-                    return new LLMModel
-                    {
-                        Id = llm!.Id!,
-                        Name = llm.Name!,
-                        Config = llm.LLMConfig!,
-                        CreatedAt = llm.CreatedAt
-                    };
+                    Id = llm!.Id!,
+                    Name = llm.Name!,
+                    Config = llm.LLMConfig!,
+                    CreatedAt = llm.CreatedAt
                 })
             };
 
@@ -64,7 +56,6 @@ namespace backend.Services
             if (user == null)
                 throw new UnauthorizedAccessException("Invalid or expired session");
 
-            // Filter by both user ID and LLM ID to prevent users accessing each other's LLMs
             var result = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id && x.Id == id)
                 .Get();
@@ -119,7 +110,7 @@ namespace backend.Services
                 {
                     new LLMModel
                     {
-                        Id = llm!.Id!,
+                        Id = llm.Id!,
                         Name = llm.Name!,
                         Config = llm.LLMConfig!,
                         CreatedAt = llm.CreatedAt
@@ -139,7 +130,6 @@ namespace backend.Services
             if (user == null)
                 throw new UnauthorizedAccessException("Invalid or expired session");
 
-            // Verify the LLM exists and belongs to the current user before updating
             var exists = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id)
                 .Where(x => x.Id == id)
@@ -150,7 +140,6 @@ namespace backend.Services
             if (llmEntity == null)
                 throw new NotFoundException("LLM not found");
 
-            // Only overwrite fields that were actually provided in the request
             if (updateLLMDto.Name != null)
                 llmEntity.Name = updateLLMDto.Name;
 
@@ -169,7 +158,7 @@ namespace backend.Services
                 {
                     new LLMModel
                     {
-                        Id = llm!.Id!,
+                        Id = llm.Id!,
                         Name = llm.Name!,
                         Config = llm.LLMConfig!,
                         CreatedAt = llm.CreatedAt
@@ -189,7 +178,6 @@ namespace backend.Services
             if (user == null)
                 throw new UnauthorizedAccessException("Invalid or expired session");
 
-            // Verify the LLM exists and belongs to the current user before deletion
             var exists = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id)
                 .Where(x => x.Id == id)
@@ -200,14 +188,13 @@ namespace backend.Services
             if (llmEntity == null)
                 throw new NotFoundException("LLM not found");
 
-            // Remove the LLM and its associated messages from the database
             await supabase.From<MessageEntity>()
                 .Where(x => x.LLMId == id)
                 .Delete();
 
             await supabase.From<LLMEntity>()
                 .Where(x => x.Id == id)
-                .Delete();   
+                .Delete();
         }
 
         public async Task<GetMessagesDto> GetLLMMessagesAsync(int id, string token, string refreshToken)
@@ -219,7 +206,6 @@ namespace backend.Services
             if (user == null)
                 throw new UnauthorizedAccessException("Invalid or expired session");
 
-            // Ensure LLM belongs to user
             var exists = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id && x.Id == id)
                 .Get();
@@ -258,7 +244,6 @@ namespace backend.Services
             if (user == null || user.Id == null)
                 throw new UnauthorizedAccessException("Invalid or expired session");
 
-            // Ensure LLM belongs to user
             var exists = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id && x.Id == id)
                 .Get();
@@ -298,22 +283,18 @@ namespace backend.Services
                     .OrderBy(msg => msg.Id)
                     .ToList();
 
-                // Check if given model is running
-                // If not, run up model first
-
                 // Send chat history & config to model
                 // Wait for response
+                string llmResponse = "This is a placeholder response";
 
-                // This is a placeholder response to be fixed once the product is actually complete
                 var assistantMessageEntity = new MessageEntity
                 {
                     Role = "assistant",
-                    Content = "placeholder",
+                    Content = llmResponse,
                     LLMId = id,
                     CreatedAt = DateTime.UtcNow,
                 };
 
-                // Add llm response to chat history
                 var assistantMessage = await supabase
                     .From<MessageEntity>()
                     .Insert(assistantMessageEntity);

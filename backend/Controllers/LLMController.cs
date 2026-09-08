@@ -1,5 +1,4 @@
 using backend.Helpers;
-using backend.Models.Common;
 using backend.Models.DTOs.LLM;
 using backend.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -38,10 +37,10 @@ namespace backend.Controllers
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
             var result = await _llmService.CreateLLMAsync(createLLMDto, token, refreshToken);
-            return Ok(result);
+            return Created(string.Empty, result);
         }
 
-        [HttpPut("{id}")]
+        [HttpPatch("{id}")]
         public async Task<ActionResult<LLMResponseDto>> UpdateLLM(int id, [FromBody] UpdateLLMDto updateLLMDto)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
@@ -70,7 +69,7 @@ namespace backend.Controllers
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
             var result = await _llmService.SendMessageAsync(id, message, token, refreshToken);
-            return Ok(result);
+            return Created(string.Empty, result);
         }
     }
 }

@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { FiUser, FiSettings, FiCreditCard, FiLogOut, FiX } from "react-icons/fi";
+import { FiUser, FiSettings, FiLogOut, FiX } from "react-icons/fi";
 import Modal from "../../ui/Modal";
 import AccountView from "./views/AccountView";
 import GeneralView from "./views/GeneralView";
-import PlanView from "./views/PlanView";
 import { useModalStore } from "../../../stores/useModalStore";
 
-type TabId = "general" | "account" | "plan";
+type TabId = "general" | "account";
 
 type Tab = {
     id: TabId;
@@ -18,7 +17,6 @@ type Tab = {
 const tabs: Tab[] = [
     { id: "general", label: "General", icon: FiSettings, content: <GeneralView /> },
     { id: "account", label: "Account", icon: FiUser, content: <AccountView /> },
-    { id: "plan", label: "Plan", icon: FiCreditCard, content: <PlanView /> },
 ];
 
 function UserSettingsModal() {
@@ -28,7 +26,6 @@ function UserSettingsModal() {
 
     return (
         <Modal isOpen={activeModal === "userSettings"} onClose={closeModal} size="lg">
-            {/* Header */}
             <div className="relative p-6 pb-4 border-b border-line/50 flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-bold text-ink">Settings</h2>
@@ -43,7 +40,6 @@ function UserSettingsModal() {
                 </button>
             </div>
 
-            {/* Tabs */}
             <div className="relative border-b border-line/50">
                 <div className="flex px-6">
                     {tabs.map((tab) => {
@@ -67,10 +63,8 @@ function UserSettingsModal() {
                 </div>
             </div>
 
-            {/* Content */}
             <div className="relative p-6 min-h-100">{activeTab.content}</div>
 
-            {/* Footer */}
             <div className="relative p-6 pt-4 border-t border-line/50">
                 <button
                     onClick={() => openModal("logoutConfirm")}

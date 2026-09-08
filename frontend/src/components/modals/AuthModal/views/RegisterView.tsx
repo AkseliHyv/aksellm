@@ -29,7 +29,6 @@ function RegisterView({ onChangeState, onSubmit }: RegisterViewProps) {
 
     return (
         <>
-            {/* Username Input */}
             <div className="space-y-2">
                 <label htmlFor="username" className="block text-ink-muted text-sm font-medium">Username</label>
                 <div className="relative">
@@ -57,7 +56,6 @@ function RegisterView({ onChangeState, onSubmit }: RegisterViewProps) {
                 )}
             </div>
 
-            {/* Email Input */}
             <div className="space-y-2">
                 <label htmlFor="email" className="block text-ink-muted text-sm font-medium">Email</label>
                 <div className="relative">
@@ -73,7 +71,6 @@ function RegisterView({ onChangeState, onSubmit }: RegisterViewProps) {
                 </div>
             </div>
 
-            {/* Password Input */}
             <div className="space-y-2">
                 <label htmlFor="password" className="block text-ink-muted text-sm font-medium">Password</label>
                 <div className="relative">
@@ -121,7 +118,6 @@ function RegisterView({ onChangeState, onSubmit }: RegisterViewProps) {
                 )}
             </div>
 
-            {/* Confirm Password Input */}
             <div className="space-y-2">
                 <label htmlFor="confirmPassword" className="block text-ink-muted text-sm font-medium">Confirm Password</label>
                 <div className="relative">
@@ -140,7 +136,6 @@ function RegisterView({ onChangeState, onSubmit }: RegisterViewProps) {
                 )}
             </div>
 
-            {/* Buttons */}
             <div className="relative flex justify-end gap-3 pt-4">
                 <button
                     type="button"

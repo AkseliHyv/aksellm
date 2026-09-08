@@ -24,10 +24,11 @@ Core infrastructure, authentication, and LLM configuration management are comple
 ## Not yet implemented
 
 - Actual Ollama inference: sending a message currently returns `"placeholder"` as the assistant response and persists it to the database
+- Running each service in docker containers with k8s
 - Token refresh: sessions are not renewed automatically after the Supabase access token expires (~1 hour)
 - Account settings: the username update form is a stub with no backend wiring
 - General and Plan settings tabs are empty stubs
-  - Different settings options are planned, such as theme selection, as well as username & profile picture changing
+- Account setting changes are not stored
 
 ---
 
@@ -73,10 +74,6 @@ aksellm/
       App.tsx
       ModalRenderer.tsx
       ToastRenderer.tsx
-  k8s/
-    backend/            # Deployment and service
-    frontend/           # Deployment and service
-    ingress.yaml        # nginx ingress (routes /api to backend, / to frontend)
 ```
 
 ---
@@ -291,34 +288,6 @@ Only Ollama is supported as a provider. The available models are:
 - `phi4`
 
 The allowed model list is defined in `backend/Models/Common/ProviderModels.cs` and mirrored in `frontend/src/domain/enums/ProviderModels.ts`. Both files need to be updated when adding new models.
-
----
-
-## Kubernetes deployment
-
-The app is designed to run on a local Kubernetes cluster. Images are pulled from `axilian/aksellm-backend` and `axilian/aksellm-frontend`.
-
-Create a secret with your Supabase credentials before deploying:
-
-```bash
-kubectl create secret generic backend-secrets \
-  --from-literal=SupabaseUrl=<your-url> \
-  --from-literal=SupabasePublicKey=<your-anon-key>
-```
-
-Apply all manifests:
-
-```bash
-kubectl apply -f k8s/backend/deployment.yaml
-kubectl apply -f k8s/backend/service.yaml
-kubectl apply -f k8s/frontend/deployment.yaml
-kubectl apply -f k8s/frontend/service.yaml
-kubectl apply -f k8s/ingress.yaml
-```
-
-The ingress routes `aksellm.local/api/*` to the backend and everything else to the frontend. Add `aksellm.local` to your `/etc/hosts` pointing at the cluster ingress IP.
-
-The `VITE_API_URL` environment variable must be set at **build time** (Vite bakes it into the static bundle). The value in the frontend k8s deployment has no effect at runtime.
 
 ---
 

@@ -4,7 +4,7 @@ import Modal from "../ui/Modal";
 import { useModalStore } from "../../stores/useModalStore";
 import { useUserStore } from "../../stores/useUserStore";
 import { useLLMStore } from "../../stores/useLLMStore";
-import { authService } from "../../services/authService";
+import { authService } from "../../services";
 
 function LogoutConfirmModal() {
     const { activeModal, closeModal, openModal } = useModalStore();
@@ -12,22 +12,22 @@ function LogoutConfirmModal() {
     const { setLLMs, selectLLM } = useLLMStore();
     const [error, setError] = useState<string | null>(null);
 
-    const handleLogout = async () => {
-        try {
-            await authService.logout();
-            clearProfile();
-            setLLMs([]);
-            selectLLM(null);
-            openModal("auth"); // return to auth modal after logout
-        } catch (e) {
-            setError(e instanceof Error ? e.message : "Logout failed");
-        }
+    const handleLogout = () => {
+        authService.logout()
+            .then(() => {
+                clearProfile();
+                setLLMs([]);
+                selectLLM(null);
+                openModal("auth");
+            })
+            .catch((e) => {
+                setError(e instanceof Error ? e.message : "Logout failed");
+            });
     };
 
     return (
         <Modal isOpen={activeModal === "logoutConfirm"} onClose={closeModal} size="sm">
             <div className="relative p-6">
-                {/* Icon */}
                 <div className="flex justify-center mb-4">
                     <div className="w-12 h-12 rounded-full bg-danger-solid/10 border border-danger-solid/20 flex items-center justify-center">
                         <FiLogOut className="text-danger" size={24} />

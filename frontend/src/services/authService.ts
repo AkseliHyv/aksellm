@@ -17,26 +17,33 @@ type AuthResponseDto = {
     message?: string;
 };
 
+type UpdateUserDto = {
+    displayName?: string;
+    emailAddress?: string;
+};
+
 export const authService = {
-    // POST /api/auth/register
     register: (data: RegisterDto) =>
         request<AuthResponseDto>("/api/auth/register", {
             method: "POST",
             body: JSON.stringify(data),
         }),
 
-    // POST /api/auth/login
     login: (data: LoginDto) =>
         request<AuthResponseDto>("/api/auth/login", {
             method: "POST",
             body: JSON.stringify(data),
         }),
 
-    // GET /api/auth/me
     me: () =>
         request<AuthResponseDto>("/api/auth/me"),
 
-    // POST /api/auth/logout
     logout: () =>
         request<void>("/api/auth/logout", { method: "POST" }),
+
+    update: (data: UpdateUserDto) =>
+        request<AuthResponseDto>("/api/auth/update", {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        }),
 };

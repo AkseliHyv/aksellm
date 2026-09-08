@@ -5,10 +5,10 @@ namespace backend.Models.DTOs.LLM
 {
     public class MessageResponseDto
     {
-        [Required]   
+        [Required]
         public required Message UserMessage { get; set; }
 
-        [Required]   
+        [Required]
         public required Message AssistantMessage { get; set; }
     }
 }

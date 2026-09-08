@@ -1,6 +1,7 @@
 import { twMerge } from "tailwind-merge";
-import { clsx } from "clsx";
-import { useEffect, useState, type KeyboardEvent } from "react";
+import clsx from "clsx";
+import { useEffect, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { llmService } from "../../services";
 import { useLLMStore } from "../../stores/useLLMStore";
 import { FiSend } from "react-icons/fi";
@@ -30,7 +31,7 @@ function TextField() {
         if (canSend) sendMessage();
     };
 
-    const sendMessage = async () => {
+    const sendMessage = () => {
         const storedInput = input;
         const tempId = -Date.now();
 
@@ -45,22 +46,24 @@ function TextField() {
         setIsSendingMessage(true);
         addMessage(optimistic);
 
-        try {
-            const messages = await llmService.sendMessage(selectedLLM!.id, storedInput);
+        llmService.sendMessage(selectedLLM!.id, storedInput)
+            .then((messages) => {
+                if (messages.userMessage == null || messages.assistantMessage == null) {
+                    throw new Error("Unexpected response shape");
+                }
 
-            if (messages.userMessage == null || messages.assistantMessage == null) throw new Error("Unexpected response shape");
-
-            // Replace placeholder & add assistant reply
-            confirmMessage(tempId, messages.userMessage);
-            addMessage(messages.assistantMessage);
-        } catch (e) {
-            showError(e instanceof Error ? e.message : "Failed to send message.");
-            cancelMessage(tempId);
-            setInput(storedInput);
-        } finally {
-            setIsSendingMessage(false);
-        }
-    }
+                confirmMessage(tempId, messages.userMessage);
+                addMessage(messages.assistantMessage);
+            })
+            .catch((e) => {
+                showError(e instanceof Error ? e.message : "Failed to send message.");
+                cancelMessage(tempId);
+                setInput(storedInput);
+            })
+            .finally(() => {
+                setIsSendingMessage(false);
+            });
+    };
 
     return (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">

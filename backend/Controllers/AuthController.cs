@@ -1,5 +1,6 @@
 using backend.Helpers;
 using backend.Models.DTOs.Auth;
+using backend.Models.DTOs.LLM;
 using backend.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,33 +20,31 @@ namespace backend.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
         {
-            var (authResponseDto, token, refreshToken) = await _authService.RegisterAsync(registerDto);
+            var (result, token, refreshToken) = await _authService.RegisterAsync(registerDto);
 
-            // Store tokens in HttpOnly cookies so they're never accessible via JS
             Response.Cookies.Append("token", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
             Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
 
-            return Ok(authResponseDto);
+            return Created(string.Empty, result);
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
         {
-            var (authResponseDto, token, refreshToken) = await _authService.LoginAsync(loginDto);
+            var (result, token, refreshToken) = await _authService.LoginAsync(loginDto);
 
-            // Store tokens in HttpOnly cookies so they're never accessible via JS
             Response.Cookies.Append("token", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
             Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
 
-            return Ok(authResponseDto);
+            return Ok(result);
         }
 
         [HttpGet("me")]
         public async Task<ActionResult<AuthResponseDto>> GetCurrentUser()
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            AuthResponseDto authResponseDto = await _authService.GetCurrentUserAsync(token, refreshToken);
-            return Ok(authResponseDto);
+            AuthResponseDto result = await _authService.GetCurrentUserAsync(token, refreshToken);
+            return Ok(result);
         }
 
         [HttpPost("logout")]
@@ -54,11 +53,18 @@ namespace backend.Controllers
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
             await _authService.LogoutAsync(token, refreshToken);
 
-            // Clear cookies from the client after invalidating the session server-side
             Response.Cookies.Delete("token");
             Response.Cookies.Delete("refreshToken");
 
             return NoContent();
+        }
+
+        [HttpPatch("update")]
+        public async Task<ActionResult<AuthResponseDto>> UpdateUser([FromBody] UpdateUserDto updateUserDto)
+        {
+            var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
+            AuthResponseDto result = await _authService.UpdateCurrentUserAsync(updateUserDto, token, refreshToken);
+            return Ok(result);
         }
     }
 }

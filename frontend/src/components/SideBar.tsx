@@ -19,36 +19,33 @@ function SideBar() {
 
     const loggedIn = profile !== null;
 
-    const handleSelectLLM = async (llm: LLMModel) => {
-        try {
-            selectLLM(llm);
+    const handleSelectLLM = (llm: LLMModel) => {
+        selectLLM(llm);
 
-            const fresh = await llmService.getById(llm.id);
+        llmService.getById(llm.id)
+            .then((fresh) => {
+                if (!fresh) {
+                    removeLLM(llm.id);
+                    return;
+                }
 
-            if (!fresh) {
-                removeLLM(llm.id);
-                return;
-            }
-
-            const current = llms.find((l) => l.id === fresh.id);
-            if (!current || JSON.stringify(current) !== JSON.stringify(fresh)) {
-                updateLLM(fresh);
-            }
-        } catch (e) {
-            showError(`Failed to refresh LLM ${llm.name}.`);
-        };
+                const current = llms.find((l) => l.id === fresh.id);
+                if (!current || JSON.stringify(current) !== JSON.stringify(fresh)) {
+                    updateLLM(fresh);
+                }
+            })
+            .catch((e) => {
+                showError(e instanceof Error ? e.message : `Failed to refresh LLM ${llm.name}.`);
+            });
     };
-
 
     return (
         <div className={twMerge(clsx(
             "h-dvh bg-linear-to-b from-app-deep via-app to-app-deep relative overflow-hidden transition-all duration-300 ease-in-out border-r border-raised/50",
             isOpen ? "w-62" : "w-14"
         ))}>
-            {/* Gradient overlay */}
             <div className="absolute inset-0 bg-linear-to-br from-raised/5 to-transparent pointer-events-none" />
 
-            {/* Title */}
             <div className={twMerge(clsx(
                 "absolute top-2 left-3 transition-opacity duration-200",
                 isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -59,7 +56,6 @@ function SideBar() {
                 <div className="h-0.5 w-16 bg-linear-to-r from-line-strong to-transparent mt-1 rounded-full" />
             </div>
 
-            {/* Toggle */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="absolute right-2 top-2 cursor-pointer w-10 h-10 pb-1 rounded-lg hover:bg-raised/50 transition-all duration-200 flex items-center justify-center group backdrop-blur-sm"
@@ -70,7 +66,6 @@ function SideBar() {
                 </span>
             </button>
 
-            {/* LLM list */}
             <div className={twMerge(clsx(
                 "w-58 mx-2 pt-20 transition-opacity duration-200",
                 isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
@@ -133,7 +128,6 @@ function SideBar() {
                 </button>
             </div>
 
-            {/* Profile */}
             {loggedIn && (
                 <div
                     className={twMerge(clsx(

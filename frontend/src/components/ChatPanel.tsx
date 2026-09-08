@@ -5,9 +5,7 @@ import TextField from "./ui/TextField";
 import { llmService } from "../services";
 import { useToastStore } from "../stores/useToastStore";
 
-// not exact zero, subpixel rounding rarely lands there
 const STICK_THRESHOLD_PX = 100;
-
 
 function ChatPanel() {
     const { selectedLLM, setMessages, messages } = useLLMStore();
@@ -27,8 +25,8 @@ function ChatPanel() {
             if (isCurrent) {
                 setMessages(chatMessages);
             }
-        }).catch((error) => {
-            showError(error.message || "Failed to fetch chat messages.");
+        }).catch((e) => {
+            showError(e instanceof Error ? e.message : "Failed to fetch chat messages.");
         });
 
         return () => {

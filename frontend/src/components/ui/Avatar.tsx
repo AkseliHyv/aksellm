@@ -1,3 +1,6 @@
+import { twMerge } from "tailwind-merge";
+import clsx from "clsx";
+
 type AvatarProps = {
     username?: string | null;
     size?: "sm" | "md" | "lg";
@@ -34,12 +37,17 @@ function Avatar({ username, size = "sm" }: AvatarProps) {
     const resolvedUsername = username || DEFAULT_USERNAME;
 
     return (
-        <div className={`
-            ${sizes[size]} ${getColor(resolvedUsername)}
-            rounded-full ring-2 ring-line group-hover:ring-line-strong
-            flex items-center justify-center
-            font-semibold text-ink transition-all shrink-0
-        `}>
+        <div
+            className={twMerge(
+                clsx(
+                    sizes[size],
+                    getColor(resolvedUsername),
+                    "rounded-full ring-2 ring-line group-hover:ring-line-strong",
+                    "flex items-center justify-center",
+                    "font-semibold text-ink transition-all shrink-0"
+                )
+            )}
+        >
             {resolvedUsername.slice(0, 2).toUpperCase()}
         </div>
     );

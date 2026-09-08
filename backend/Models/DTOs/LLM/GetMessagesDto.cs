@@ -5,7 +5,7 @@ namespace backend.Models.DTOs.LLM
 {
     public class GetMessagesDto
     {
-        [Required]   
+        [Required]
         public required IEnumerable<Message> ChatMessages { get; set; }
     }
 }

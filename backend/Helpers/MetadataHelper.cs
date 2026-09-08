@@ -5,7 +5,6 @@ namespace backend.Helpers
 {
     public static class MetadataHelper
     {
-        // Extracts metadata from user
         public static Dictionary<string, object> GetMetadata(User user)
         {
             var metadata = user.UserMetadata ?? new Dictionary<string, object>();
