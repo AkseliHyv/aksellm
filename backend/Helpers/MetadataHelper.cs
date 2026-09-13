@@ -10,20 +10,20 @@ namespace backend.Helpers
             var metadata = user.UserMetadata ?? new Dictionary<string, object>();
 
             metadata.TryGetValue("display_name", out var displayNameObj);
-            metadata.TryGetValue("plan", out var planObj);
+            metadata.TryGetValue("theme", out var themeObj);
 
             var displayName =
                 displayNameObj?.ToString()
                 ?? user.Email!;
 
-            var plan =
-                planObj?.ToString()
-                ?? "free";
+            var theme =
+                themeObj?.ToString()
+                ?? "Catppuccin";
 
             var result = new Dictionary<string, object>
             {
                 ["display_name"] = displayName,
-                ["plan"] = plan
+                ["theme"] = theme
             };
 
             return result;

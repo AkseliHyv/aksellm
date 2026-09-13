@@ -30,7 +30,7 @@ namespace backend.Services
                 Data = new Dictionary<string, object>
                 {
                     { "display_name", registerDto.Username },
-                    { "plan", "free" }
+                    { "theme", "Catppuccin" }
                 }
             };
 
@@ -61,7 +61,7 @@ namespace backend.Services
                     Id = session.User.Id!,
                     Username = metadata["display_name"].ToString()!,
                     Email = session.User.Email!,
-                    Plan = metadata["plan"].ToString()!,
+                    Theme = metadata["theme"].ToString()!,
                     CreatedAt = session.User.CreatedAt
                 }
             };
@@ -89,7 +89,7 @@ namespace backend.Services
                     Id = session.User.Id!,
                     Username = metadata["display_name"].ToString()!,
                     Email = session.User.Email!,
-                    Plan = metadata["plan"].ToString()!,
+                    Theme = metadata["theme"].ToString()!,
                     CreatedAt = session.User.CreatedAt
                 }
             };
@@ -123,7 +123,7 @@ namespace backend.Services
                     Id = user.Id!,
                     Username = metadata["display_name"].ToString()!,
                     Email = user.Email!,
-                    Plan = metadata["plan"].ToString()!,
+                    Theme = metadata["theme"].ToString()!,
                     CreatedAt = user.CreatedAt
                 }
             };
@@ -147,6 +147,9 @@ namespace backend.Services
             if (updateUserDto.DisplayName != null)
                 metadata["display_name"] = updateUserDto.DisplayName;
 
+            if (updateUserDto.Theme != null)
+                metadata["theme"] = updateUserDto.Theme;
+
             userAttributes.Data = metadata;
             await supabase.Auth.Update(userAttributes);
 
@@ -159,7 +162,7 @@ namespace backend.Services
                     Id = user!.Id!,
                     Username = metadata["display_name"].ToString()!,
                     Email = user.Email!,
-                    Plan = metadata["plan"].ToString()!,
+                    Theme = metadata["theme"].ToString()!,
                     CreatedAt = user.CreatedAt
                 }
             };

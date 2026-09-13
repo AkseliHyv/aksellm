@@ -148,7 +148,7 @@ function SideBar() {
                             <div className="text-sm font-medium text-ink-muted group-hover:text-ink transition-colors block truncate">
                                 {profile?.username}
                             </div>
-                            <div className="text-xs text-ink-faint">{profile.plan} plan</div>
+                            <div className="text-xs text-ink-faint">{profile?.email}</div>
                         </div>
                     )}
                 </div>

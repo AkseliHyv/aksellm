@@ -2,6 +2,6 @@ export type UserProfile = {
     id: string;
     username: string;
     email: string;
-    plan: string;
+    theme: string;
     createdAt: string;
 };

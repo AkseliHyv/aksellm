@@ -11,7 +11,7 @@ namespace backend.Models.Common
         [Required]
         public required string Email { get; set; }
         [Required]
-        public required string Plan { get; set; }
+        public required string Theme { get; set; }
         public required DateTime CreatedAt { get; set; }
     }
 }

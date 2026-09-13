@@ -11,6 +11,7 @@ import { useToastStore } from "./stores/useToastStore";
 
 function App() {
     const { setProfile, clearProfile } = useUserStore();
+    const theme = useUserStore((s) => s.profile?.theme);
     const { openModal } = useModalStore();
     const { setLLMs } = useLLMStore();
     const { showError } = useToastStore();
@@ -33,6 +34,14 @@ function App() {
                 setAuthLoading(false);
             });
     }, []);
+
+    useEffect(() => {
+        if (theme) {
+            document.documentElement.dataset.theme = theme.toLowerCase().replace(/\s+/g, "-");
+        } else {
+            delete document.documentElement.dataset.theme;
+        }
+    }, [theme]);
 
     if (authLoading) {
         return (

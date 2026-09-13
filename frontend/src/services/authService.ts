@@ -19,6 +19,7 @@ type AuthResponseDto = {
 
 type UpdateUserDto = {
     displayName?: string;
+    theme?: string;
 };
 
 export const authService = {
