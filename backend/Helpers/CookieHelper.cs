@@ -12,5 +12,12 @@ namespace backend.Helpers
 
             return (token, refreshToken);
         }
+
+        public static void SetTokenCookies(HttpResponse response, string token, string refreshToken)
+        {
+            var options = new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict };
+            response.Cookies.Append("token", token, options);
+            response.Cookies.Append("refreshToken", refreshToken, options);
+        }
     }
 }

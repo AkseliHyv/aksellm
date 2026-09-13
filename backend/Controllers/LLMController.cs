@@ -20,7 +20,11 @@ namespace backend.Controllers
         public async Task<ActionResult<LLMResponseDto>> GetAllLLMs()
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var result = await _llmService.GetAllLLMsAsync(token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _llmService.GetAllLLMsAsync(token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Ok(result);
         }
 
@@ -28,7 +32,11 @@ namespace backend.Controllers
         public async Task<ActionResult<LLMResponseDto>> GetLLMById(int id)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var result = await _llmService.GetLLMByIdAsync(id, token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _llmService.GetLLMByIdAsync(id, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Ok(result);
         }
 
@@ -36,7 +44,11 @@ namespace backend.Controllers
         public async Task<ActionResult<LLMResponseDto>> CreateLLM([FromBody] CreateLLMDto createLLMDto)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var result = await _llmService.CreateLLMAsync(createLLMDto, token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _llmService.CreateLLMAsync(createLLMDto, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Created(string.Empty, result);
         }
 
@@ -44,7 +56,11 @@ namespace backend.Controllers
         public async Task<ActionResult<LLMResponseDto>> UpdateLLM(int id, [FromBody] UpdateLLMDto updateLLMDto)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var result = await _llmService.UpdateLLMAsync(id, updateLLMDto, token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _llmService.UpdateLLMAsync(id, updateLLMDto, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Ok(result);
         }
 
@@ -52,7 +68,11 @@ namespace backend.Controllers
         public async Task<IActionResult> DeleteLLM(int id)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            await _llmService.DeleteLLMAsync(id, token, refreshToken);
+            var (newToken, newRefreshToken) = await _llmService.DeleteLLMAsync(id, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return NoContent();
         }
 
@@ -60,7 +80,11 @@ namespace backend.Controllers
         public async Task<ActionResult<GetMessagesDto>> GetLLMMessages(int id)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var result = await _llmService.GetLLMMessagesAsync(id, token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _llmService.GetLLMMessagesAsync(id, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Ok(result);
         }
 
@@ -68,7 +92,11 @@ namespace backend.Controllers
         public async Task<ActionResult<MessageResponseDto>> SendMessage(int id, [FromBody] string message)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var result = await _llmService.SendMessageAsync(id, message, token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _llmService.SendMessageAsync(id, message, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Created(string.Empty, result);
         }
     }

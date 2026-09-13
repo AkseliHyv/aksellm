@@ -8,21 +8,21 @@ namespace backend.Services
 {
     public interface ILLMService
     {
-        Task<LLMResponseDto> GetAllLLMsAsync(string token, string refreshToken);
-        Task<LLMResponseDto> GetLLMByIdAsync(int id, string token, string refreshToken);
-        Task<LLMResponseDto> CreateLLMAsync(CreateLLMDto createLLMDto, string token, string refreshToken);
-        Task<LLMResponseDto> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto, string token, string refreshToken);
-        Task DeleteLLMAsync(int id, string token, string refreshToken);
-        Task<GetMessagesDto> GetLLMMessagesAsync(int id, string token, string refreshToken);
-        Task<MessageResponseDto> SendMessageAsync(int id, string message, string token, string refreshToken);
+        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetAllLLMsAsync(string token, string refreshToken);
+        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetLLMByIdAsync(int id, string token, string refreshToken);
+        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> CreateLLMAsync(CreateLLMDto createLLMDto, string token, string refreshToken);
+        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto, string token, string refreshToken);
+        Task<(string? newToken, string? newRefreshToken)> DeleteLLMAsync(int id, string token, string refreshToken);
+        Task<(GetMessagesDto result, string? newToken, string? newRefreshToken)> GetLLMMessagesAsync(int id, string token, string refreshToken);
+        Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken);
     }
 
     public class LLMService : ILLMService
     {
-        public async Task<LLMResponseDto> GetAllLLMsAsync(string token, string refreshToken)
+        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetAllLLMsAsync(string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -30,7 +30,6 @@ namespace backend.Services
 
             var result = await supabase.From<LLMEntity>()
                 .Where(x => x.UserId == user.Id)
-                .Limit(15)
                 .Get();
 
             var response = new LLMResponseDto
@@ -44,13 +43,14 @@ namespace backend.Services
                 })
             };
 
-            return response;
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (response, newToken, newRefreshToken);
         }
 
-        public async Task<LLMResponseDto> GetLLMByIdAsync(int id, string token, string refreshToken)
+        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetLLMByIdAsync(int id, string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -78,13 +78,14 @@ namespace backend.Services
                 }
             };
 
-            return response;
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (response, newToken, newRefreshToken);
         }
 
-        public async Task<LLMResponseDto> CreateLLMAsync(CreateLLMDto createLLMDto, string token, string refreshToken)
+        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> CreateLLMAsync(CreateLLMDto createLLMDto, string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null || user.Id == null)
@@ -118,13 +119,14 @@ namespace backend.Services
                 }
             };
 
-            return response;
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (response, newToken, newRefreshToken);
         }
 
-        public async Task<LLMResponseDto> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto, string token, string refreshToken)
+        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto, string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -166,13 +168,14 @@ namespace backend.Services
                 }
             };
 
-            return response;
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (response, newToken, newRefreshToken);
         }
 
-        public async Task DeleteLLMAsync(int id, string token, string refreshToken)
+        public async Task<(string? newToken, string? newRefreshToken)> DeleteLLMAsync(int id, string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -188,19 +191,17 @@ namespace backend.Services
             if (llmEntity == null)
                 throw new NotFoundException("LLM not found");
 
-            await supabase.From<MessageEntity>()
-                .Where(x => x.LLMId == id)
-                .Delete();
-
             await supabase.From<LLMEntity>()
                 .Where(x => x.Id == id)
                 .Delete();
+
+            return SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
         }
 
-        public async Task<GetMessagesDto> GetLLMMessagesAsync(int id, string token, string refreshToken)
+        public async Task<(GetMessagesDto result, string? newToken, string? newRefreshToken)> GetLLMMessagesAsync(int id, string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -220,7 +221,7 @@ namespace backend.Services
                 .Limit(50)
                 .Get();
 
-            return new GetMessagesDto
+            var response = new GetMessagesDto
             {
                 ChatMessages = messages.Models.Select(msg => new Message
                 {
@@ -230,15 +231,18 @@ namespace backend.Services
                     CreatedAt = msg.CreatedAt
                 }).Reverse().ToList()
             };
+
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (response, newToken, newRefreshToken);
         }
 
-        public async Task<MessageResponseDto> SendMessageAsync(int id, string message, string token, string refreshToken)
+        public async Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken)
         {
             if (string.IsNullOrWhiteSpace(message))
                 throw new ValidationException("No message given");
 
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null || user.Id == null)
@@ -283,8 +287,6 @@ namespace backend.Services
                     .OrderBy(msg => msg.Id)
                     .ToList();
 
-                // Send chat history & config to model
-                // Wait for response
                 string llmResponse = "This is a placeholder response";
 
                 var assistantMessageEntity = new MessageEntity
@@ -321,7 +323,8 @@ namespace backend.Services
                     }
                 };
 
-                return response;
+                var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+                return (response, newToken, newRefreshToken);
             }
             finally
             {

@@ -2,6 +2,14 @@ namespace backend.Helpers
 {
     public static class SupabaseHelper
     {
+        public static (string? Token, string? RefreshToken) GetRefreshedTokens(Supabase.Gotrue.Session session, string originalToken, string originalRefreshToken)
+        {
+            if (session.AccessToken == null || session.AccessToken == originalToken)
+                return (null, null);
+
+            return (session.AccessToken, session.RefreshToken);
+        }
+
         public static async Task<Supabase.Client> GetClientAsync()
         {
             var url = Environment.GetEnvironmentVariable("SUPABASE_URL");

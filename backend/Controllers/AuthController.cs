@@ -21,10 +21,7 @@ namespace backend.Controllers
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
         {
             var (result, token, refreshToken) = await _authService.RegisterAsync(registerDto);
-
-            Response.Cookies.Append("token", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
-            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
-
+            CookieHelper.SetTokenCookies(Response, token, refreshToken);
             return Created(string.Empty, result);
         }
 
@@ -32,10 +29,7 @@ namespace backend.Controllers
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
         {
             var (result, token, refreshToken) = await _authService.LoginAsync(loginDto);
-
-            Response.Cookies.Append("token", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
-            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
-
+            CookieHelper.SetTokenCookies(Response, token, refreshToken);
             return Ok(result);
         }
 
@@ -43,7 +37,11 @@ namespace backend.Controllers
         public async Task<ActionResult<AuthResponseDto>> GetCurrentUser()
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            AuthResponseDto result = await _authService.GetCurrentUserAsync(token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _authService.GetCurrentUserAsync(token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Ok(result);
         }
 
@@ -63,7 +61,11 @@ namespace backend.Controllers
         public async Task<ActionResult<AuthResponseDto>> UpdateUser([FromBody] UpdateUserDto updateUserDto)
         {
             var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            AuthResponseDto result = await _authService.UpdateCurrentUserAsync(updateUserDto, token, refreshToken);
+            var (result, newToken, newRefreshToken) = await _authService.UpdateCurrentUserAsync(updateUserDto, token, refreshToken);
+
+            if (newToken != null && newRefreshToken != null)
+                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+
             return Ok(result);
         }
     }

@@ -17,8 +17,6 @@ namespace backend.Models.Common
         public string? SystemPrompt { get; set;}
         public double? TopP { get; set; }
         public int? TopK { get; set; }
-        public double? FrequencyPenalty { get; set; }
-        public double? PresencePenalty { get; set; }
         public double? RepeatPenalty { get; set; }
         public int? Seed { get; set; }
         public bool Stream { get; set; } = true;

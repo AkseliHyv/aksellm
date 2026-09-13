@@ -11,8 +11,8 @@ namespace backend.Services
         Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> RegisterAsync(RegisterDto registerDto);
         Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> LoginAsync(LoginDto loginDto);
         Task LogoutAsync(string token, string refreshToken);
-        Task<AuthResponseDto> GetCurrentUserAsync(string token, string refreshToken);
-        Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto, string token, string refreshToken);
+        Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> GetCurrentUserAsync(string token, string refreshToken);
+        Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> UpdateCurrentUserAsync(UpdateUserDto updateUserDto, string token, string refreshToken);
     }
 
     public class AuthService : IAuthService
@@ -105,10 +105,10 @@ namespace backend.Services
             await supabase.Auth.SignOut();
         }
 
-        public async Task<AuthResponseDto> GetCurrentUserAsync(string token, string refreshToken)
+        public async Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> GetCurrentUserAsync(string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -128,13 +128,14 @@ namespace backend.Services
                 }
             };
 
-            return authResponseDto;
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (authResponseDto, newToken, newRefreshToken);
         }
 
-        public async Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto, string token, string refreshToken)
+        public async Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> UpdateCurrentUserAsync(UpdateUserDto updateUserDto, string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
-            await supabase.Auth.SetSession(token, refreshToken);
+            var session = await supabase.Auth.SetSession(token, refreshToken);
 
             var user = supabase.Auth.CurrentUser;
             if (user == null)
@@ -142,9 +143,6 @@ namespace backend.Services
 
             var metadata = MetadataHelper.GetMetadata(user!);
             var userAttributes = new UserAttributes();
-
-            if (updateUserDto.EmailAddress != null)
-                userAttributes.Email = updateUserDto.EmailAddress;
 
             if (updateUserDto.DisplayName != null)
                 metadata["display_name"] = updateUserDto.DisplayName;
@@ -166,7 +164,8 @@ namespace backend.Services
                 }
             };
 
-            return authResponseDto;
+            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+            return (authResponseDto, newToken, newRefreshToken);
         }
 
         private void ValidateUsername(string username)

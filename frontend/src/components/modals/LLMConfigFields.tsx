@@ -80,40 +80,16 @@ function AdvancedLLMConfigFields({ config, onChange, isOpen, onToggle }: Advance
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="space-y-1.5">
-                            <label htmlFor="frequencyPenalty" className={labelCls}>Freq. Penalty</label>
-                            <input
-                                id="frequencyPenalty"
-                                type="number" min={-2} max={2} step={0.01}
-                                value={config.frequencyPenalty ?? ""}
-                                placeholder="default"
-                                onChange={(e) => onChange({ frequencyPenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                className={inputCls}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label htmlFor="presencePenalty" className={labelCls}>Pres. Penalty</label>
-                            <input
-                                id="presencePenalty"
-                                type="number" min={-2} max={2} step={0.01}
-                                value={config.presencePenalty ?? ""}
-                                placeholder="default"
-                                onChange={(e) => onChange({ presencePenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                className={inputCls}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label htmlFor="repeatPenalty" className={labelCls}>Repeat Penalty</label>
-                            <input
-                                id="repeatPenalty"
-                                type="number" min={0} step={0.01}
-                                value={config.repeatPenalty ?? ""}
-                                placeholder="default"
-                                onChange={(e) => onChange({ repeatPenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
-                                className={inputCls}
-                            />
-                        </div>
+                    <div className="space-y-1.5">
+                        <label htmlFor="repeatPenalty" className={labelCls}>Repeat Penalty</label>
+                        <input
+                            id="repeatPenalty"
+                            type="number" min={0} step={0.01}
+                            value={config.repeatPenalty ?? ""}
+                            placeholder="default"
+                            onChange={(e) => onChange({ repeatPenalty: e.target.value === "" ? undefined : Number(e.target.value) })}
+                            className={inputCls}
+                        />
                     </div>
 
                     <div className="space-y-1.5">

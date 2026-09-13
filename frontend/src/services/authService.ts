@@ -19,7 +19,6 @@ type AuthResponseDto = {
 
 type UpdateUserDto = {
     displayName?: string;
-    emailAddress?: string;
 };
 
 export const authService = {

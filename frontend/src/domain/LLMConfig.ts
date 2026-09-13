@@ -9,8 +9,6 @@ export type LLMConfig = {
     systemPrompt?: string;
     topP?: number;
     topK?: number;
-    frequencyPenalty?: number;
-    presencePenalty?: number;
     repeatPenalty?: number;
     seed?: number;
     stopSequences?: string[];
