@@ -1,5 +1,4 @@
-import { twMerge } from "tailwind-merge";
-import clsx from "clsx";
+import { cn } from "../../lib/cn";
 import { useEffect, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { llmService } from "../../services";
@@ -68,13 +67,11 @@ function TextField() {
     return (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">
             <div
-                className={twMerge(
-                    clsx(
-                        "flex items-center gap-2",
-                        "bg-surface/80 backdrop-blur-md",
-                        "border border-line",
-                        "rounded-2xl px-4 py-3 shadow-lg"
-                    )
+                className={cn(
+                    "flex items-center gap-2",
+                    "bg-surface/80 backdrop-blur-md",
+                    "border border-line focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10",
+                    "rounded-2xl px-4 py-3 shadow-lg transition-all duration-200"
                 )}
             >
                 <input
@@ -86,15 +83,17 @@ function TextField() {
                 />
 
                 <button
-                    className="text-ink-muted w-4.5 transition cursor-pointer hover:text-ink"
+                    className={cn(
+                        "w-7 h-7 flex items-center justify-center rounded-full transition-all cursor-pointer",
+                        canSend ? "bg-accent text-app-deep hover:brightness-110" : "text-ink-faint"
+                    )}
                     disabled={!canSend}
                     onClick={sendMessage}
+                    aria-label="Send message"
                 >
-                    {isSendingMessage && (
-                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-ink-muted border-t-raised" />
-                    ) || (
-                        <FiSend size={18}/>
-                    )}
+                    {isSendingMessage
+                        ? <div className="w-4 h-4 animate-spin rounded-full border-2 border-ink-muted border-t-transparent" />
+                        : <FiSend size={14} />}
                 </button>
             </div>
         </div>

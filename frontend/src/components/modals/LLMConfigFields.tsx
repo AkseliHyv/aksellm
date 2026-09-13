@@ -1,8 +1,9 @@
 import { FiChevronDown } from "react-icons/fi";
+import { cn } from "../../lib/cn";
 import type { LLMConfig } from "../../domain";
 
-export const inputCls = "w-full bg-surface/50 text-ink px-3 py-2 rounded-lg border border-line focus:outline-none focus:border-line-active focus:ring-2 focus:ring-line-active/20 transition-all placeholder:text-ink-faint text-sm";
-export const labelCls = "block text-ink-muted text-sm font-medium";
+const inputCls = "w-full bg-surface/50 text-ink px-3 py-2 rounded-lg border border-line focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all placeholder:text-ink-faint text-sm";
+const labelCls = "block text-ink-muted text-sm font-medium";
 
 type AdvancedLLMConfigFieldsProps = {
     config: LLMConfig;
@@ -23,12 +24,12 @@ function AdvancedLLMConfigFields({ config, onChange, isOpen, onToggle }: Advance
                 <span>Advanced settings</span>
                 <FiChevronDown
                     size={16}
-                    className={`text-ink-subtle transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    className={cn("text-ink-subtle transition-transform duration-200", isOpen && "rotate-180")}
                 />
             </button>
 
             {isOpen && (
-                <div className="p-4 space-y-4 border-t border-line/60 bg-surface/20">
+                <div className="p-4 space-y-4 border-t border-line/60 bg-surface/20 animate-fade-in">
 
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
@@ -112,9 +113,15 @@ function AdvancedLLMConfigFields({ config, onChange, isOpen, onToggle }: Advance
                             role="switch"
                             aria-checked={config.stream}
                             onClick={() => onChange({ stream: !config.stream })}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none cursor-pointer ${config.stream ? "bg-ink-faint" : "bg-hover"}`}
+                            className={cn(
+                                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none cursor-pointer",
+                                config.stream ? "bg-accent" : "bg-hover"
+                            )}
                         >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-ink shadow transition-transform duration-200 ${config.stream ? "translate-x-6" : "translate-x-1"}`} />
+                            <span className={cn(
+                                "inline-block h-4 w-4 transform rounded-full bg-ink shadow transition-transform duration-200",
+                                config.stream ? "translate-x-6" : "translate-x-1"
+                            )} />
                         </button>
                     </div>
 
@@ -144,7 +151,7 @@ function AdvancedLLMConfigFields({ config, onChange, isOpen, onToggle }: Advance
                             value={config.systemPrompt ?? ""}
                             placeholder="Optional system prompt…"
                             onChange={(e) => onChange({ systemPrompt: e.target.value || undefined })}
-                            className={`${inputCls} resize-none`}
+                            className={cn(inputCls, "resize-none")}
                         />
                     </div>
 

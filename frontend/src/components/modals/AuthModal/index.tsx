@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import Modal from "../../ui/Modal";
+import ModalHeader from "../../ui/ModalHeader";
 import LogInView from "./views/LogInView";
 import RegisterView from "./views/RegisterView";
 import { useModalStore } from "../../../stores/useModalStore";
@@ -45,16 +46,11 @@ function AuthModal() {
 
     return (
         <Modal isOpen={activeModal === "auth"} size="md">
-            <div className="relative p-6 pb-4 border-b border-line/50">
-                <h2 className="text-xl font-bold text-ink">
-                    {view === "login" ? "Log In" : "Create an Account"}
-                </h2>
-                <div className="h-0.5 w-20 bg-linear-to-r from-line-strong to-transparent mt-2 rounded-full" />
-            </div>
+            <ModalHeader title={view === "login" ? "Log In" : "Create an Account"} />
 
             <form onSubmit={(e: FormEvent) => e.preventDefault()} className="relative p-6 space-y-5">
                 {error && (
-                    <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2">
+                    <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2 animate-fade-in">
                         {error}
                     </p>
                 )}

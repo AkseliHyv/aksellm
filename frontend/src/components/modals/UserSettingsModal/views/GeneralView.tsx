@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { FiChevronDown, FiMonitor } from "react-icons/fi";
+import { FiMonitor } from "react-icons/fi";
 import { useToastStore } from "../../../../stores/useToastStore";
 import { useUserStore } from "../../../../stores/useUserStore";
 import { authService } from "../../../../services/authService";
-
-const THEME_OPTIONS = ["Catppuccin", "Nord", "Gruvbox", "Dracula", "Tokyo Night", "Rose Pine", "Solarized Dark"];
+import { FormSelect } from "../../../ui/FormField";
+import { THEME_OPTIONS } from "../../../../domain";
+import { applyTheme } from "../../../../lib/theme";
 
 type GeneralViewProps = {
     formId: string;
@@ -24,6 +25,16 @@ function GeneralView({ formId, onDirtyChange, onSaved }: GeneralViewProps) {
         onDirtyChange(canSave);
     }, [canSave, onDirtyChange]);
 
+    useEffect(() => {
+        applyTheme(theme);
+    }, [theme]);
+
+    useEffect(() => {
+        return () => {
+            applyTheme(useUserStore.getState().profile?.theme);
+        };
+    }, []);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!canSave) return;
@@ -38,28 +49,16 @@ function GeneralView({ formId, onDirtyChange, onSaved }: GeneralViewProps) {
             });
     };
 
-    const inputCls = "w-full bg-surface/50 text-ink pl-10 pr-4 py-2.5 rounded-lg border border-line focus:outline-none focus:border-line-active focus:ring-2 focus:ring-line-active/20 transition-all placeholder:text-ink-faint";
-    const labelCls = "block text-ink-muted text-sm font-medium";
-
     return (
         <form id={formId} onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-                <label htmlFor="theme" className={labelCls}>Theme</label>
-                <div className="relative">
-                    <FiMonitor className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" size={18} />
-                    <select
-                        id="theme"
-                        value={theme}
-                        onChange={(e) => setTheme(e.target.value)}
-                        className={`${inputCls} appearance-none pr-10`}
-                    >
-                        {THEME_OPTIONS.map((option) => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
-                    </select>
-                    <FiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" size={16} />
-                </div>
-            </div>
+            <FormSelect
+                id="theme"
+                label="Theme"
+                icon={FiMonitor}
+                options={THEME_OPTIONS}
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+            />
         </form>
     );
 }

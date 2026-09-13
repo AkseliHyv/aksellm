@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { applyTheme } from "./lib/theme";
 import SideBar from "./components/SideBar";
 import ModalRenderer from "./ModalRenderer";
 import { useUserStore } from "./stores/useUserStore";
@@ -36,17 +37,13 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (theme) {
-            document.documentElement.dataset.theme = theme.toLowerCase().replace(/\s+/g, "-");
-        } else {
-            delete document.documentElement.dataset.theme;
-        }
+        applyTheme(theme);
     }, [theme]);
 
     if (authLoading) {
         return (
             <div className="flex h-screen w-screen items-center justify-center">
-                <div className="h-10 w-10 animate-spin rounded-full border-3 border-ink-muted border-t-raised" />
+                <div className="h-10 w-10 animate-spin rounded-full border-3 border-line border-t-accent" />
             </div>
         );
     }

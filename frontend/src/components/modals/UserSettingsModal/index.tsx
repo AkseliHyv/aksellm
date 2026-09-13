@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { FiUser, FiSettings, FiLogOut, FiX, FiCheck } from "react-icons/fi";
+import { FiUser, FiSettings, FiLogOut, FiCheck } from "react-icons/fi";
+import { cn } from "../../../lib/cn";
 import Modal from "../../ui/Modal";
+import ModalHeader from "../../ui/ModalHeader";
+import Button from "../../ui/Button";
 import AccountView from "./views/AccountView";
 import GeneralView from "./views/GeneralView";
 import { useModalStore } from "../../../stores/useModalStore";
@@ -42,19 +45,7 @@ function UserSettingsModal() {
 
     return (
         <Modal isOpen={activeModal === "userSettings"} onClose={closeModal} size="lg">
-            <div className="relative p-6 pb-4 border-b border-line/50 flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-bold text-ink">Settings</h2>
-                    <div className="h-0.5 w-20 bg-linear-to-r from-line-strong to-transparent mt-2 rounded-full" />
-                </div>
-                <button
-                    onClick={closeModal}
-                    className="p-2 rounded-lg hover:bg-hover/50 transition-all duration-200 text-ink-subtle hover:text-ink cursor-pointer"
-                    aria-label="Close settings"
-                >
-                    <FiX size={20} />
-                </button>
-            </div>
+            <ModalHeader title="Settings" onClose={closeModal} />
 
             <div className="relative border-b border-line/50">
                 <div className="flex px-6">
@@ -65,11 +56,12 @@ function UserSettingsModal() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTabId(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2 cursor-pointer ${
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-3 font-medium text-sm transition-all duration-200 border-b-2 cursor-pointer",
                                     isActive
-                                        ? "text-ink border-line-active"
+                                        ? "text-ink border-accent"
                                         : "text-ink-subtle border-transparent hover:text-ink-muted"
-                                }`}
+                                )}
                             >
                                 <Icon size={16} />
                                 {tab.label}
@@ -89,31 +81,26 @@ function UserSettingsModal() {
             </div>
 
             <div className="relative p-6 pt-4 border-t border-line/50 flex items-center justify-between">
-                <button
+                <Button
+                    type="button"
+                    variant="danger"
                     onClick={() => openModal("logoutConfirm")}
-                    className="flex items-center gap-2 px-5 py-2.5 cursor-pointer bg-linear-to-r from-danger-solid to-danger-deep text-ink rounded-lg hover:from-danger-solid hover:to-danger-solid transition-all duration-200 font-medium shadow-lg shadow-danger-deep/30"
                     aria-label="Logout"
                 >
                     <FiLogOut size={16} />
                     Log Out
-                </button>
+                </Button>
 
                 <div className="flex items-center gap-3">
                     {saved && (
-                        <span className="flex items-center gap-1.5 text-sm text-success">
+                        <span className="flex items-center gap-1.5 text-sm text-success animate-fade-in">
                             <FiCheck size={16} />
                             Saved
                         </span>
                     )}
-                    <button
-                        type="submit"
-                        form={formId}
-                        disabled={!canSave}
-                        aria-label="Save settings"
-                        className="px-5 py-2.5 cursor-pointer bg-linear-to-r from-line to-line-strong text-ink rounded-lg hover:from-line-strong hover:to-line-active transition-all duration-200 font-medium shadow-lg shadow-surface/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-line disabled:hover:to-line-strong"
-                    >
+                    <Button type="submit" form={formId} disabled={!canSave} aria-label="Save settings">
                         Save
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

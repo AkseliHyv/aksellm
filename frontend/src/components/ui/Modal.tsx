@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { twMerge } from "tailwind-merge";
-import clsx from "clsx";
-
+import { cn } from "../../lib/cn";
 
 type ModalProps = {
     isOpen: boolean;
@@ -38,16 +36,15 @@ function Modal({ isOpen, onClose, size = "md", children }: ModalProps) {
             />
 
             <div
-                className={twMerge(
-                    clsx(
-                        "relative bg-linear-to-b from-raised via-raised to-surface w-full mx-4 rounded-xl shadow-2xl border border-line/50 overflow-hidden",
-                        sizes[size]
-                    )
+                className={cn(
+                    "relative bg-linear-to-b from-raised via-raised to-surface w-full mx-4 rounded-xl shadow-2xl border border-line/50 overflow-hidden animate-scale-in",
+                    sizes[size]
                 )}
             >
-                <div className="absolute inset-0 bg-linear-to-br from-line/10 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-br from-accent/10 to-transparent pointer-events-none" />
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
-                {children}
+                <div className="relative">{children}</div>
             </div>
         </div>,
         document.body

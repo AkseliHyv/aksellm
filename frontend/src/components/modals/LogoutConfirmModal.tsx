@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FiLogOut } from "react-icons/fi";
 import Modal from "../ui/Modal";
+import Button from "../ui/Button";
 import { useModalStore } from "../../stores/useModalStore";
 import { useUserStore } from "../../stores/useUserStore";
 import { useLLMStore } from "../../stores/useLLMStore";
@@ -41,26 +42,18 @@ function LogoutConfirmModal() {
                 </p>
 
                 {error && (
-                    <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2 mb-4 text-center">
+                    <p className="text-sm text-danger bg-danger/10 border border-danger/20 rounded-lg px-4 py-2 mb-4 text-center animate-fade-in">
                         {error}
                     </p>
                 )}
 
                 <div className="flex gap-3">
-                    <button
-                        onClick={closeModal}
-                        aria-label="Cancel logout"
-                        className="flex-1 px-5 py-2.5 cursor-pointer bg-raised/50 text-ink-muted rounded-lg hover:bg-hover/50 transition-all duration-200 font-medium border border-line/50 hover:border-line-strong"
-                    >
+                    <Button variant="secondary" onClick={closeModal} aria-label="Cancel logout" className="flex-1">
                         Cancel
-                    </button>
-                    <button
-                        onClick={handleLogout}
-                        aria-label="Logout"
-                        className="flex-1 px-5 py-2.5 cursor-pointer bg-linear-to-r from-danger-solid to-danger-deep text-ink rounded-lg hover:from-danger-solid hover:to-danger-solid transition-all duration-200 font-medium shadow-lg shadow-danger-deep/30"
-                    >
+                    </Button>
+                    <Button variant="danger" onClick={handleLogout} aria-label="Logout" className="flex-1">
                         Log Out
-                    </button>
+                    </Button>
                 </div>
             </div>
         </Modal>

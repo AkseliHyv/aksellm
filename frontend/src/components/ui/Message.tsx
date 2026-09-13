@@ -1,5 +1,4 @@
-import clsx from "clsx";
-import { twMerge } from "tailwind-merge";
+import { cn } from "../../lib/cn";
 
 type MessageProps = {
     role: string;
@@ -11,23 +10,14 @@ function Message({ role, content, createdAt }: MessageProps) {
     if (role === "system") return null;
 
     return (
-        <div
-            className={twMerge(
-                clsx(
-                    "flex w-full mt-4",
-                    role === "user" ? "justify-end" : "justify-start"
-                )
-            )}
-        >
+        <div className={cn("flex w-full mt-4 animate-fade-in", role === "user" ? "justify-end" : "justify-start")}>
             <div className="flex flex-col max-w-200 wrap-anywhere">
                 <div
-                    className={twMerge(
-                        clsx(
-                            "w-fit px-3 py-2 rounded-lg",
-                            role === "user"
-                                ? "bg-hover/70 self-end"
-                                : "bg-raised self-start"
-                        )
+                    className={cn(
+                        "w-fit px-3 py-2 rounded-lg",
+                        role === "user"
+                            ? "bg-linear-to-br from-accent/90 to-accent-strong/90 text-app-deep self-end shadow-md shadow-accent/10"
+                            : "bg-raised self-start"
                     )}
                 >
                     {content}
