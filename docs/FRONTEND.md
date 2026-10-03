@@ -2,6 +2,10 @@
 
 [← README](../README.md)
 
+This page contains the steps required to get the frontend up and running.
+
+## Prerequisite Information
+
 The frontend is a React 19 and TypeScript single-page app built with Vite 7.
 It uses Tailwind CSS v4 for styling and Zustand for state.
 
@@ -12,16 +16,20 @@ It uses Tailwind CSS v4 for styling and Zustand for state.
 
 ## Configure
 
-The frontend points to `http://localhost:8000` by default.
-Override it with a `.env` file in `frontend/`:
+The frontend points to `http://localhost:5173` by default.
+Override it with from `frontend/vite.config.ts`:
 
-```dotenv
-VITE_API_URL=http://localhost:8000
+```
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    port: 5173 // Port to replace
+  }
+})
 ```
 
 ## Run
 
-Prerequisites: see [Prerequisites](#prerequisites).
 
 1. `cd frontend`
 2. `npm install`
@@ -46,5 +54,3 @@ frontend/
     ModalRenderer.tsx
     ToastRenderer.tsx
 ```
-
-`services/api.ts` wraps `fetch` with `credentials: "include"` so the auth cookies set by the backend are sent on every request, and throws on any non-2xx response using the backend's `message` field.

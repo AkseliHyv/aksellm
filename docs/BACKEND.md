@@ -2,8 +2,11 @@
 
 [← README](../README.md)
 
-The backend is an ASP.NET Core 10 API in C#.
-It authenticates requests with tokens stored in HttpOnly cookies and forwards them to Supabase for both authentication and data access.
+This page contains the steps required to get the backend up and running.
+
+## Prerequisite Information
+
+The backend is an ASP.NET Core 10 API in C#. It authenticates requests with tokens stored in HttpOnly cookies and forwards them to Supabase for both authentication and data access.
 
 ## Prerequisites
 
@@ -28,17 +31,17 @@ Create `backend/appsettings.Development.json`:
 |---|---|
 | `AllowedOrigins` | Comma-separated list of origins allowed by CORS. Must include the frontend's origin. |
 | `Supabase:Url` | The project URL from Supabase's API settings. |
-| `Supabase:PublicKey` | The project's publishable (anon) key. RLS restricts access. |
+| `Supabase:PublicKey` | The project's publishable (anon) key. |
 
 ## Run
 
-Prerequisites: configuration above complete.
+```
+cd backend
+dotnet restore
+dotnet run
+```
 
-1. `cd backend`
-2. `dotnet restore`
-3. `dotnet run`
-
-Expected result: the terminal prints `Now listening on: http://localhost:8000`.
+This makes the backend run on the defined url.
 
 ## Project structure
 
@@ -51,7 +54,7 @@ backend/
     Domain/            # LLMEntity, MessageEntity (Postgrest ORM entities)
     DTOs/              # Request and response shapes
   Helpers/             # CookieHelper, SupabaseHelper, MetadataHelper
-  Filters/             # ExceptionFilter (maps exceptions to HTTP status codes)
+  Filters/             # ExceptionFilter* (maps exceptions to HTTP status codes)
   Exceptions/          # NotFoundException, ValidationException, ConflictException
   Validation/          # ValidModelForProviderAttribute
   Program.cs
@@ -59,7 +62,7 @@ backend/
   appsettings.Development.json
 ```
 
-`ExceptionFilter` is the single place that turns exceptions into HTTP responses: `ValidationException` to 400, `NotFoundException` to 404, `ConflictException` to 409, Supabase Auth/Postgrest errors to 400 (or 502 for a 5xx from Supabase itself), `UnauthorizedAccessException` to 401, anything else to 500.
+\*ExceptionFilter is used to catch, handle, and return every otherwise uncatched error. As a matter of fact, it handles most backend-side errors that occur, both expected and unexpected.
 
 ## API
 
@@ -74,7 +77,7 @@ No `Authorization` header is used.
 | POST | `/api/auth/register` | Register a new account |
 | POST | `/api/auth/login` | Log in |
 | GET | `/api/auth/me` | Get the current user's profile |
-| PATCH | `/api/auth/update` | Update display name or email |
+| PATCH | `/api/auth/update` | Update display name |
 | POST | `/api/auth/logout` | Log out and clear cookies |
 
 ### LLM configurations
@@ -83,7 +86,7 @@ No `Authorization` header is used.
 |---|---|---|
 | GET | `/api/llm` | List all LLMs for the authenticated user |
 | GET | `/api/llm/{id}` | Get a single LLM |
-| POST | `/api/llm` | Create a new LLM configuration, see [per-user limit](DATABASE.md#per-user-llm-limit) |
+| POST | `/api/llm` | Create a new LLM configuration
 | PATCH | `/api/llm/{id}` | Update an existing LLM configuration |
 | DELETE | `/api/llm/{id}` | Delete an LLM and its messages |
 
