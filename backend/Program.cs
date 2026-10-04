@@ -29,7 +29,11 @@ builder.Services.AddControllers(options =>
 });
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ILLMService, LLMService>();
+builder.Services.AddHttpClient<ILLMService, LLMService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434");
+    client.Timeout = TimeSpan.FromMinutes(5);
+});
 
 builder.Services.AddOpenApi();
 

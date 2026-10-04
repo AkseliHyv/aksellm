@@ -12,8 +12,11 @@ The backend is an ASP.NET Core 10 API in C#. It authenticates requests with toke
 
 - .NET 10 SDK
 - A Supabase project configured as described in [Database setup](DATABASE.md)
+- A running Ollama instance, see [Ollama integration](OLLAMA.md)
 
 ## Configure
+
+### CORS & Supabase
 
 Create `backend/appsettings.Development.json`:
 
@@ -33,6 +36,34 @@ Create `backend/appsettings.Development.json`:
 | `Supabase:Url` | The project URL from Supabase's API settings. |
 | `Supabase:PublicKey` | The project's publishable (anon) key. |
 
+### Ollama URL
+
+The backend sends requests to Ollama at `http://localhost:11434` by default.
+Override it with the following field in `backend/appsettings.Development.json`:
+
+```
+"Ollama": {
+  "BaseUrl": "http://localhost:11434" // Line to change
+}
+```
+
+### URL to run on
+
+The backend points to `http://localhost:8000` by default.
+Override it from `backend/Properties/launchSettings.json`:
+
+```
+"http/https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8000", // Line to change
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+```
+
 ## Run
 
 ```
@@ -41,7 +72,7 @@ dotnet restore
 dotnet run
 ```
 
-This makes the backend run on the defined url.
+This makes the backend run on the defined url, which is by default ``http://localhost:8000``.
 
 ## Project structure
 
@@ -77,7 +108,7 @@ No `Authorization` header is used.
 | POST | `/api/auth/register` | Register a new account |
 | POST | `/api/auth/login` | Log in |
 | GET | `/api/auth/me` | Get the current user's profile |
-| PATCH | `/api/auth/update` | Update display name |
+| PATCH | `/api/auth/update` | Update display name and theme |
 | POST | `/api/auth/logout` | Log out and clear cookies |
 
 ### LLM configurations
@@ -95,4 +126,4 @@ No `Authorization` header is used.
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/llm/{id}/chat` | Get the last 50 messages for an LLM |
-| POST | `/api/llm/{id}/chat` | Send a message, see [Ollama integration](OLLAMA.md). Returns 409 if this LLM is already generating a response |
+| POST | `/api/llm/{id}/chat` | Send a message and get the model's response, see [Ollama integration](OLLAMA.md). Returns 409 if this LLM is already generating a response |

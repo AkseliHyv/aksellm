@@ -3,6 +3,9 @@ using backend.Helpers;
 using backend.Models.Common;
 using backend.Models.Domain;
 using backend.Models.DTOs.LLM;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 
 namespace backend.Services
 {
@@ -17,7 +20,7 @@ namespace backend.Services
         Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken);
     }
 
-    public class LLMService : ILLMService
+    public class LLMService(HttpClient httpClient) : ILLMService
     {
         public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetAllLLMsAsync(string token, string refreshToken)
         {
@@ -262,64 +265,75 @@ namespace backend.Services
 
             try
             {
-                var userMessageEntity = new MessageEntity
-                {
-                    Role = "user",
-                    Content = message,
-                    LLMId = id,
-                    CreatedAt = DateTime.UtcNow,
-                };
+                var config = llm.LLMConfig ?? throw new Exception("LLM configuration is missing");
+                var sentAt = DateTime.UtcNow;
 
-                var userMessage = await supabase
-                    .From<MessageEntity>()
-                    .Insert(userMessageEntity);
-
-                if (userMessage.Model == null)
-                    throw new Exception("Failed to send message");
-
-                var historyResult = await supabase.From<MessageEntity>()
+                var messageHistory = await supabase.From<MessageEntity>()
                     .Where(msg => msg.LLMId == id)
                     .Order("id", Supabase.Postgrest.Constants.Ordering.Descending)
-                    .Limit(10)
+                    .Limit(9)
                     .Get();
 
-                var chatHistory = historyResult.Models
+                var messages = messageHistory.Models
                     .OrderBy(msg => msg.Id)
+                    .Select(msg => new { role = msg.Role, content = msg.Content })
                     .ToList();
 
-                string llmResponse = "This is a placeholder response";
+                messages.Add(new { role = "user", content = message });
 
-                var assistantMessageEntity = new MessageEntity
+                if (!string.IsNullOrWhiteSpace(config.SystemPrompt))
+                    messages.Insert(0, new { role = "system", content = config.SystemPrompt });
+
+                var httpResponse = await httpClient.PostAsJsonAsync("/api/chat", new
                 {
-                    Role = "assistant",
-                    Content = llmResponse,
-                    LLMId = id,
-                    CreatedAt = DateTime.UtcNow,
-                };
+                    model = config.Model,
+                    messages,
+                    stream = false,
+                    options = new
+                    {
+                        temperature = config.Temperature,
+                        num_predict = config.MaxTokens,
+                        top_p = config.TopP,
+                        top_k = config.TopK,
+                        repeat_penalty = config.RepeatPenalty,
+                        seed = config.Seed
+                    }
+                }, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
+                
+                httpResponse.EnsureSuccessStatusCode();
 
-                var assistantMessage = await supabase
-                    .From<MessageEntity>()
-                    .Insert(assistantMessageEntity);
+                var json = await httpResponse.Content.ReadFromJsonAsync<JsonNode>();
+                string llmResponse = json?["message"]?["content"]?.GetValue<string>()
+                    ?? throw new Exception("Empty response from Ollama");
 
-                if (assistantMessage.Model == null)
-                    throw new Exception("Unexpected error happened while responding");
+                var inserted = await supabase.From<MessageEntity>().Insert(new List<MessageEntity>
+                {
+                    new() { Role = "user", Content = message, LLMId = id, CreatedAt = sentAt },
+                    new() { Role = "assistant", Content = llmResponse, LLMId = id, CreatedAt = DateTime.UtcNow }
+                });
+
+                if (inserted.Models.Count != 2)
+                    throw new Exception("Failed to save messages");
+
+                var userMessage = inserted.Models[0];
+                var assistantMessage = inserted.Models[1];
 
                 var response = new MessageResponseDto
                 {
                     UserMessage = new Message
                     {
-                        Id = userMessage.Model.Id,
-                        Role = userMessage.Model.Role,
-                        Content = userMessage.Model.Content,
-                        CreatedAt = userMessage.Model.CreatedAt
+                        Id = userMessage.Id,
+                        Role = userMessage.Role,
+                        Content = userMessage.Content,
+                        CreatedAt = userMessage.CreatedAt
                     },
 
                     AssistantMessage = new Message
                     {
-                        Id = assistantMessage.Model.Id,
-                        Role = assistantMessage.Model.Role,
-                        Content = assistantMessage.Model.Content,
-                        CreatedAt = assistantMessage.Model.CreatedAt
+                        Id = assistantMessage.Id,
+                        Role = assistantMessage.Role,
+                        Content = assistantMessage.Content,
+                        CreatedAt = assistantMessage.CreatedAt
                     }
                 };
 

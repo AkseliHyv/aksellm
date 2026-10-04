@@ -4,6 +4,7 @@ using Supabase.Postgrest.Exceptions;
 using Supabase.Gotrue.Exceptions;
 using backend.Exceptions;
 using System.Text.Json;
+using System.Net;
 
 namespace backend.Filters
 {
@@ -62,6 +63,22 @@ namespace backend.Filters
                 {
                     context.Result = new BadRequestObjectResult(new { message = errorMessage });
                 }
+                context.ExceptionHandled = true;
+                return;
+            }
+
+            if (context.Exception is HttpRequestException hre)
+            {
+                _logger.LogError(context.Exception, "LLM provider error: {Message}", context.Exception.Message);
+
+                var (statusCode, message) = hre.StatusCode switch
+                {
+                    HttpStatusCode.NotFound => (StatusCodes.Status502BadGateway, "The selected model is not available on the server."),
+                    null => (StatusCodes.Status503ServiceUnavailable, "The LLM service is unreachable. Please try again shortly."),
+                    _ => (StatusCodes.Status502BadGateway, "The LLM service returned an error. Please try again shortly.")
+                };
+
+                context.Result = new ObjectResult(new { message }) { StatusCode = statusCode };
                 context.ExceptionHandled = true;
                 return;
             }

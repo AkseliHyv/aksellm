@@ -6,7 +6,7 @@ A self-hosted web app for managing and chatting with local LLM configurations th
 
 ## Status
 
-Core infrastructure, authentication, and LLM configuration management are complete. The chat UI is functional but model inference is not yet connected.
+Core infrastructure, authentication, LLM configuration management and model inference are complete. Responses are not yet streamed.
 
 ## Core Features
 
@@ -18,7 +18,7 @@ Core infrastructure, authentication, and LLM configuration management are comple
 
 ## Not yet implemented
 
-- Ollama inference, see [Ollama integration](docs/OLLAMA.md)
+- Response streaming and stop sequences, see [Ollama integration](docs/OLLAMA.md)
 - Running the frontend and backend in Docker containers via a local run script, with Ollama on a separate host connected over the network
 
 ## Tech stack
@@ -29,21 +29,22 @@ Core infrastructure, authentication, and LLM configuration management are comple
 | State | Zustand (user, LLM list, modal, toast) |
 | Backend | ASP.NET Core 10, C# |
 | Auth / DB | JWT, Supabase (Gotrue + Postgrest) |
-| Models | Ollama (planned) |
+| Models | Ollama |
 | Infra | Docker (planned) |
 
 ## Quick start
 
 1. Set up the database, see [Database](docs/DATABASE.md).
-2. Run the backend, see [Backend](docs/BACKEND.md).
-3. Run the frontend, see [Frontend](docs/FRONTEND.md).
+2. Set up Ollama, see [Ollama integration](docs/OLLAMA.md).
+3. Run the backend, see [Backend](docs/BACKEND.md).
+4. Run the frontend, see [Frontend](docs/FRONTEND.md).
 
 ## Documentation
 
 - [Database](docs/DATABASE.md): Supabase schema, RLS policies, and functions.
 - [Backend](docs/BACKEND.md): running the API locally, configuration, project structure, API reference
 - [Frontend](docs/FRONTEND.md): running the web app locally, configuration, project structure
-- [Ollama integration](docs/OLLAMA.md): status of model inference and the supported model list
+- [Ollama integration](docs/OLLAMA.md): setup, errors and the supported model list
 
 ## License
 

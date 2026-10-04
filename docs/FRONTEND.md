@@ -16,26 +16,38 @@ It uses Tailwind CSS v4 for styling and Zustand for state.
 
 ## Configure
 
+### Backend URL
+
+The frontend sends requests to `http://localhost:8000` by default.
+Override with a .env file in `frontend/` with the following line:
+
+```
+VITE_API_URL=https://api.example.com
+```
+
+### URL to run on
+
 The frontend points to `http://localhost:5173` by default.
-Override it with from `frontend/vite.config.ts`:
+Override it from `frontend/vite.config.ts`:
 
 ```
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5173 // Port to replace
+    port: 5173 // Line to change
   }
 })
 ```
 
 ## Run
 
+```
+cd frontend
+npm install
+npm run dev
+```
 
-1. `cd frontend`
-2. `npm install`
-3. `npm run dev`
-
-Expected result: Vite prints a local URL, `http://localhost:5173` by default.
+This makes the frontend run on the defined url, which is by default ``http://localhost:5173``.
 
 ## Project structure
 
