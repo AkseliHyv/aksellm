@@ -49,8 +49,8 @@ function AdvancedLLMConfigFields({ config, onChange, isOpen, onToggle }: Advance
                                 id="maxTokens"
                                 type="number" min={1} step={1}
                                 value={config.maxTokens}
-                                placeholder="200"
-                                onChange={(e) => onChange({ maxTokens: e.target.value === "" ? 200 : Number(e.target.value) })}
+                                placeholder="2048"
+                                onChange={(e) => onChange({ maxTokens: e.target.value === "" ? 2048 : Number(e.target.value) })}
                                 className={inputCls}
                             />
                         </div>

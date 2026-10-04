@@ -15,7 +15,7 @@ const DEFAULT_CONFIG: LLMConfig = {
     provider: LLMProvider.Ollama,
     model: "",
     temperature: 0.7,
-    maxTokens: 200,
+    maxTokens: 2048,
     stream: true,
 };
 

@@ -4,7 +4,21 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/docker.yml"
+      - "!**.md"
   pull_request:
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/docker.yml"
+      - "!**.md"
 
 permissions:
   contents: read

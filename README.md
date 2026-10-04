@@ -13,7 +13,10 @@ Core infrastructure, authentication, LLM configuration management and model infe
 - Register and log in with email and password
 - Create, edit and delete custom LLM configurations
 - Configure model parameters per LLM (sampling, penalties, seed, streaming, stop sequences, system prompt)
-- Have discussions with owned LLM configurations
+- Have discussions with owned LLM configurations, with responses rendered as:
+  - Markdown, including tables, task lists and strikethrough
+  - Syntax-highlighted code blocks with a copy button
+  - Math written in LaTeX, using `$...$`, `$$...$$`, `\(...\)` or `\[...\]`
 - Update user profile information such as display name and theme
 
 ## Not yet implemented
@@ -39,7 +42,7 @@ Core infrastructure, authentication, LLM configuration management and model infe
 
 ## Configure
 
-Create a `.env` file in the repository root:
+Create a `.env` file with the following lines:
 
 ```
 Supabase__Url=<your-supabase-project-url>
@@ -52,7 +55,7 @@ Supabase__PublicKey=<your-supabase-publishable-key>
 | `Supabase__PublicKey` | The project's publishable (anon) key. |
 | `Ollama__BaseUrl` | Optional. The Ollama URL, `http://localhost:11434` by default. |
 
-Both run modes read this file.
+When running as a container, the file can be in any folder and the repository is not needed. In dev mode, the file must be in the repository root.
 
 ## Run as a container
 
@@ -64,12 +67,21 @@ Add the following line to `.env` so the container can reach Ollama on the host:
 Ollama__BaseUrl=http://host.docker.internal:11434
 ```
 
+Run the following from the folder containing `.env`:
+
+```
+docker pull ghcr.io/akselihyv/aksellm
+docker run --env-file .env -p 8080:8080 --add-host=host.docker.internal:host-gateway ghcr.io/akselihyv/aksellm
+```
+
+This makes AkseLLM run on ``http://localhost:8080``.
+
+To build the image from source instead, run the following in the repository root:
+
 ```
 docker build -t aksellm .
 docker run --env-file .env -p 8080:8080 --add-host=host.docker.internal:host-gateway aksellm
 ```
-
-This makes AkseLLM run on ``http://localhost:8080``.
 
 On Linux, Ollama only accepts connections from the host itself by default. Set `OLLAMA_HOST` so the container can reach it, see [Ollama integration](docs/OLLAMA.md#url-to-run-on).
 
