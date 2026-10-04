@@ -41,7 +41,7 @@ function SideBar() {
 
     return (
         <div className={cn(
-            "h-dvh bg-linear-to-b from-app-deep via-app to-app-deep relative overflow-hidden transition-all duration-300 ease-in-out border-r border-raised/50",
+            "h-dvh bg-linear-to-b from-app-deep via-app to-app-deep relative overflow-hidden transition-all duration-300 ease-in-out border-r border-raised/50 shrink-0",
             isOpen ? "w-62" : "w-14"
         )}>
             <div className="absolute inset-0 bg-linear-to-br from-accent/5 to-transparent pointer-events-none" />

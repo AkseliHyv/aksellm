@@ -52,11 +52,11 @@ function ChatPanel() {
     if (!selectedLLM) return null;
 
     return (
-        <div className="relative w-auto flex-1">
+        <div className="relative min-w-0 w-auto flex-1">
             <div
                 ref={scrollRef}
                 onScroll={handleScroll}
-                className="overflow-y-scroll h-dvh px-20 pt-10 pb-30"
+                className="overflow-y-scroll h-dvh px-4 sm:px-8 lg:px-20 pt-10 pb-30"
             >
                 {messages?.map((msg) => (
                     <Message

@@ -1,3 +1,4 @@
+import Markdown from "react-markdown";
 import { cn } from "../../lib/cn";
 
 type MessageProps = {
@@ -11,16 +12,22 @@ function Message({ role, content, createdAt }: MessageProps) {
 
     return (
         <div className={cn("flex w-full mt-4 animate-fade-in", role === "user" ? "justify-end" : "justify-start")}>
-            <div className="flex flex-col max-w-200 wrap-anywhere">
+            <div className="flex flex-col min-w-0 max-w-200 wrap-anywhere">
                 <div
                     className={cn(
-                        "w-fit px-3 py-2 rounded-lg",
+                        "w-fit max-w-full px-3 py-2 rounded-lg",
                         role === "user"
-                            ? "bg-linear-to-br from-accent/90 to-accent-strong/90 text-app-deep self-end shadow-md shadow-accent/10"
+                            ? "bg-linear-to-br from-accent/90 to-accent-strong/90 text-app-deep self-end shadow-md shadow-accent/10 whitespace-pre-wrap"
                             : "bg-raised self-start"
                     )}
                 >
-                    {content}
+                    {role === "user" ? (
+                        content
+                    ) : (
+                        <div className="prose prose-sm sm:prose-base prose-invert max-w-none">
+                            <Markdown>{content}</Markdown>
+                        </div>
+                    )}
                 </div>
 
                 {role === "user" && (

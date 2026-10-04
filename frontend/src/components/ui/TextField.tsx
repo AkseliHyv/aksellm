@@ -1,5 +1,5 @@
 import { cn } from "../../lib/cn";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { llmService } from "../../services";
 import { useLLMStore } from "../../stores/useLLMStore";
@@ -21,7 +21,16 @@ function TextField() {
         setInput("");
     }, [selectedLLM]);
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useLayoutEffect(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+    }, [input]);
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
 
         if (activeModal) return;
@@ -68,14 +77,16 @@ function TextField() {
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4">
             <div
                 className={cn(
-                    "flex items-center gap-2",
+                    "flex items-end gap-2",
                     "bg-surface/80 backdrop-blur-md",
                     "border border-line focus-within:border-accent/60 focus-within:shadow-lg focus-within:shadow-accent/10",
                     "rounded-2xl px-4 py-3 shadow-lg transition-all duration-200"
                 )}
             >
-                <input
-                    className="flex-1 bg-transparent outline-none text-ink placeholder:text-ink-faint"
+                <textarea
+                    ref={textareaRef}
+                    rows={1}
+                    className="flex-1 resize-none bg-transparent outline-none text-ink placeholder:text-ink-faint py-0.5 max-h-40 overflow-y-auto"
                     placeholder="Type a message..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
