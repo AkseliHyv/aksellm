@@ -1,4 +1,4 @@
-import request from "./api";
+import request, { streamRequest } from "./api";
 import type { LLMModel, LLMConfig, Message } from "../domain";
 
 type CreateLLMDto = {
@@ -24,6 +24,11 @@ type MessageResponseDto = {
     userMessage: Message;
     assistantMessage: Message;
 };
+
+type StreamEvent =
+    | { type: "chunk"; content: string }
+    | { type: "done"; userMessage: Message; assistantMessage: Message }
+    | { type: "error"; content: string };
 
 export const llmService = {
     getAll: () =>
@@ -55,4 +60,21 @@ export const llmService = {
             method: "POST",
             body: JSON.stringify(message),
         }),
+
+    sendMessageStream: async (id: number, message: string, onChunk: (content: string) => void) => {
+        let result = null as MessageResponseDto | null;
+
+        await streamRequest<StreamEvent>(`/api/llm/${id}/chat/stream`, {
+            method: "POST",
+            body: JSON.stringify(message),
+        }, (event) => {
+            if (event.type === "chunk") onChunk(event.content);
+            else if (event.type === "done") result = { userMessage: event.userMessage, assistantMessage: event.assistantMessage };
+            else throw new Error(event.content);
+        });
+
+        if (!result) throw new Error("The response ended unexpectedly");
+
+        return result;
+    },
 };

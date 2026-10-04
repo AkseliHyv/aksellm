@@ -69,6 +69,8 @@ function Message({ role, content, createdAt }: MessageProps) {
                 >
                     {role === "user" ? (
                         content
+                    ) : content === "" ? (
+                        <div className="w-4 h-4 my-1 animate-spin rounded-full border-2 border-ink-muted border-t-transparent" />
                     ) : (
                         <div className="prose prose-sm sm:prose-base prose-invert max-w-none">
                             <Markdown

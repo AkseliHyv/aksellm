@@ -14,6 +14,7 @@ type LLMStore = {
 
     setMessages: (messages: Message[]) => void;
     addMessage: (messages: Message) => void;
+    appendToMessage: (id: number, content: string) => void;
     confirmMessage: (tempId: number, confirmed: Message) => void;
     cancelMessage: (tempId: number) => void;
 };
@@ -37,6 +38,9 @@ export const useLLMStore = create<LLMStore>((set) => ({
 
     setMessages: (messages) => set({ messages }),
     addMessage: (messages) => set((state) => ({ messages: [...state.messages, messages] })),
+    appendToMessage: (id, content) => set((state) => ({
+        messages: state.messages.map((m) => m.id === id ? { ...m, content: m.content + content } : m),
+    })),
     confirmMessage: (tempId, confirmed) => set((state) => ({
         messages: state.messages.map((m) => m.id === tempId ? confirmed : m),
     })),

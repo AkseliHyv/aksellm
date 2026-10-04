@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using backend.Helpers;
 using backend.Models.DTOs.LLM;
 using backend.Services;
@@ -9,10 +11,17 @@ namespace backend.Controllers
     [Route("api/[controller]")]
     public class LLMController : ControllerBase
     {
+        private static readonly JsonSerializerOptions StreamJsonOptions = new(JsonSerializerDefaults.Web)
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        private readonly ILogger<LLMController> _logger;
         private readonly ILLMService _llmService;
 
         public LLMController(ILLMService llmService)
         {
+            _logger = logger;
             _llmService = llmService;
         }
 
@@ -98,6 +107,46 @@ namespace backend.Controllers
                 CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
 
             return Created(string.Empty, result);
+        }
+
+        [HttpPost("{id}/chat/stream")]
+        public async Task StreamMessage(int id, [FromBody] string message)
+        {
+            var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
+            var cancellationToken = HttpContext.RequestAborted;
+
+            try
+            {
+                await foreach (var streamEvent in _llmService.StreamMessageAsync(id, message, token, refreshToken, cancellationToken))
+                {
+                    if (streamEvent.Type == "session")
+                    {
+                        if (streamEvent.NewToken != null && streamEvent.NewRefreshToken != null)
+                            CookieHelper.SetTokenCookies(Response, streamEvent.NewToken, streamEvent.NewRefreshToken);
+
+                        Response.ContentType = "application/x-ndjson";
+                        continue;
+                    }
+
+                    await WriteStreamEventAsync(streamEvent, cancellationToken);
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex) when (Response.HasStarted)
+            {
+                _logger.LogError(ex, "Streaming failed: {Message}", ex.Message);
+                await WriteStreamEventAsync(
+                    new StreamEventDto { Type = "error", Content = "The response was interrupted. Please try again." },
+                    CancellationToken.None);
+            }
+        }
+
+        private async Task WriteStreamEventAsync(StreamEventDto streamEvent, CancellationToken cancellationToken)
+        {
+            await Response.WriteAsync(JsonSerializer.Serialize(streamEvent, StreamJsonOptions) + "\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
         }
     }
 }

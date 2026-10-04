@@ -11,7 +11,7 @@ import type { Message } from "../../domain";
 function TextField() {
     const [input, setInput] = useState("");
     const [isSendingMessage, setIsSendingMessage] = useState(false);
-    const { selectedLLM, addMessage, confirmMessage, cancelMessage } = useLLMStore();
+    const { selectedLLM, addMessage, appendToMessage, confirmMessage, cancelMessage } = useLLMStore();
     const { showError } = useToastStore();
     const { activeModal } = useModalStore();
 
@@ -42,6 +42,9 @@ function TextField() {
     const sendMessage = () => {
         const storedInput = input;
         const tempId = -Date.now();
+        const tempAssistantId = tempId - 1;
+        const llmId = selectedLLM!.id;
+        const shouldStream = selectedLLM!.config.stream;
 
         const optimistic: Message = {
             id: tempId,
@@ -53,19 +56,30 @@ function TextField() {
         setInput("");
         setIsSendingMessage(true);
         addMessage(optimistic);
+        addMessage({
+            id: tempAssistantId,
+            role: "assistant",
+            content: "",
+            createdAt: new Date().toISOString(),
+        });
 
-        llmService.sendMessage(selectedLLM!.id, storedInput)
+        const request = shouldStream
+            ? llmService.sendMessageStream(llmId, storedInput, (chunk) => appendToMessage(tempAssistantId, chunk))
+            : llmService.sendMessage(llmId, storedInput);
+
+        request
             .then((messages) => {
                 if (messages.userMessage == null || messages.assistantMessage == null) {
                     throw new Error("Unexpected response shape");
                 }
 
                 confirmMessage(tempId, messages.userMessage);
-                addMessage(messages.assistantMessage);
+                confirmMessage(tempAssistantId, messages.assistantMessage);
             })
             .catch((e) => {
                 showError(e instanceof Error ? e.message : "Failed to send message.");
                 cancelMessage(tempId);
+                cancelMessage(tempAssistantId);
                 setInput(storedInput);
             })
             .finally(() => {

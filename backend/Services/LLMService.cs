@@ -3,6 +3,8 @@ using backend.Helpers;
 using backend.Models.Common;
 using backend.Models.Domain;
 using backend.Models.DTOs.LLM;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -18,10 +20,16 @@ namespace backend.Services
         Task<(string? newToken, string? newRefreshToken)> DeleteLLMAsync(int id, string token, string refreshToken);
         Task<(GetMessagesDto result, string? newToken, string? newRefreshToken)> GetLLMMessagesAsync(int id, string token, string refreshToken);
         Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken);
+        IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, string token, string refreshToken, CancellationToken cancellationToken);
     }
 
     public class LLMService(HttpClient httpClient) : ILLMService
     {
+        private static readonly JsonSerializerOptions OllamaJsonOptions = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
         public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetAllLLMsAsync(string token, string refreshToken)
         {
             var supabase = await SupabaseHelper.GetClientAsync();
@@ -241,6 +249,97 @@ namespace backend.Services
 
         public async Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken)
         {
+            var (supabase, session, llm) = await ClaimGenerationAsync(id, message, token, refreshToken);
+
+            try
+            {
+                var sentAt = DateTime.UtcNow;
+                var chatRequest = await BuildChatRequestAsync(supabase, llm, message, false);
+
+                var httpResponse = await httpClient.PostAsJsonAsync("/api/chat", chatRequest, OllamaJsonOptions);
+                httpResponse.EnsureSuccessStatusCode();
+
+                var json = await httpResponse.Content.ReadFromJsonAsync<JsonNode>();
+                string llmResponse = json?["message"]?["content"]?.GetValue<string>()
+                    ?? throw new Exception("Empty response from Ollama");
+
+                var response = await SaveMessagesAsync(supabase, id, message, sentAt, llmResponse);
+
+                var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+                return (response, newToken, newRefreshToken);
+            }
+            finally
+            {
+                await supabase.Rpc("release_llm_generation", new { target_llm = id });
+            }
+        }
+
+        public async IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, string token, string refreshToken, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var (supabase, session, llm) = await ClaimGenerationAsync(id, message, token, refreshToken);
+
+            try
+            {
+                var sentAt = DateTime.UtcNow;
+                var chatRequest = await BuildChatRequestAsync(supabase, llm, message, true);
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat")
+                {
+                    Content = JsonContent.Create(chatRequest, options: OllamaJsonOptions)
+                };
+
+                using var httpResponse = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                httpResponse.EnsureSuccessStatusCode();
+
+                var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
+                yield return new StreamEventDto { Type = "session", NewToken = newToken, NewRefreshToken = newRefreshToken };
+
+                await using var stream = await httpResponse.Content.ReadAsStreamAsync(cancellationToken);
+                using var reader = new StreamReader(stream);
+                var llmResponse = new StringBuilder();
+
+                while (await reader.ReadLineAsync(cancellationToken) is { } line)
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    var chunk = JsonNode.Parse(line);
+
+                    var error = chunk?["error"]?.GetValue<string>();
+                    if (error != null)
+                        throw new Exception($"Ollama stream failed: {error}");
+
+                    var content = chunk?["message"]?["content"]?.GetValue<string>();
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        llmResponse.Append(content);
+                        yield return new StreamEventDto { Type = "chunk", Content = content };
+                    }
+
+                    if (chunk?["done"]?.GetValue<bool>() == true)
+                        break;
+                }
+
+                if (llmResponse.Length == 0)
+                    throw new Exception("Empty response from Ollama");
+
+                var saved = await SaveMessagesAsync(supabase, id, message, sentAt, llmResponse.ToString());
+
+                yield return new StreamEventDto
+                {
+                    Type = "done",
+                    UserMessage = saved.UserMessage,
+                    AssistantMessage = saved.AssistantMessage
+                };
+            }
+            finally
+            {
+                await supabase.Rpc("release_llm_generation", new { target_llm = id });
+            }
+        }
+
+        private static async Task<(Supabase.Client supabase, Supabase.Gotrue.Session session, LLMEntity llm)> ClaimGenerationAsync(int id, string message, string token, string refreshToken)
+        {
             if (string.IsNullOrWhiteSpace(message))
                 throw new ValidationException("No message given");
 
@@ -263,87 +362,70 @@ namespace backend.Services
             if (!claimed)
                 throw new ConflictException("This LLM is already generating a response, please wait or try again later");
 
-            try
-            {
-                var config = llm.LLMConfig ?? throw new Exception("LLM configuration is missing");
-                var sentAt = DateTime.UtcNow;
-
-                var messageHistory = await supabase.From<MessageEntity>()
-                    .Where(msg => msg.LLMId == id)
-                    .Order("id", Supabase.Postgrest.Constants.Ordering.Descending)
-                    .Limit(9)
-                    .Get();
-
-                var messages = messageHistory.Models
-                    .OrderBy(msg => msg.Id)
-                    .Select(msg => new { role = msg.Role, content = msg.Content })
-                    .ToList();
-
-                messages.Add(new { role = "user", content = message });
-
-                if (!string.IsNullOrWhiteSpace(config.SystemPrompt))
-                    messages.Insert(0, new { role = "system", content = config.SystemPrompt });
-
-                var httpResponse = await httpClient.PostAsJsonAsync("/api/chat", new
-                {
-                    model = config.Model,
-                    messages,
-                    stream = false,
-                    options = new
-                    {
-                        temperature = config.Temperature,
-                        num_predict = config.MaxTokens,
-                        top_p = config.TopP,
-                        top_k = config.TopK,
-                        repeat_penalty = config.RepeatPenalty,
-                        seed = config.Seed
-                    }
-                }, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
-                
-                httpResponse.EnsureSuccessStatusCode();
-
-                var json = await httpResponse.Content.ReadFromJsonAsync<JsonNode>();
-                string llmResponse = json?["message"]?["content"]?.GetValue<string>()
-                    ?? throw new Exception("Empty response from Ollama");
-
-                var inserted = await supabase.From<MessageEntity>().Insert(new List<MessageEntity>
-                {
-                    new() { Role = "user", Content = message, LLMId = id, CreatedAt = sentAt },
-                    new() { Role = "assistant", Content = llmResponse, LLMId = id, CreatedAt = DateTime.UtcNow }
-                });
-
-                if (inserted.Models.Count != 2)
-                    throw new Exception("Failed to save messages");
-
-                var userMessage = inserted.Models[0];
-                var assistantMessage = inserted.Models[1];
-
-                var response = new MessageResponseDto
-                {
-                    UserMessage = new Message
-                    {
-                        Id = userMessage.Id,
-                        Role = userMessage.Role,
-                        Content = userMessage.Content,
-                        CreatedAt = userMessage.CreatedAt
-                    },
-
-                    AssistantMessage = new Message
-                    {
-                        Id = assistantMessage.Id,
-                        Role = assistantMessage.Role,
-                        Content = assistantMessage.Content,
-                        CreatedAt = assistantMessage.CreatedAt
-                    }
-                };
-
-                var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-                return (response, newToken, newRefreshToken);
-            }
-            finally
-            {
-                await supabase.Rpc("release_llm_generation", new { target_llm = id });
-            }
+            return (supabase, session, llm);
         }
+
+        private static async Task<object> BuildChatRequestAsync(Supabase.Client supabase, LLMEntity llm, string message, bool stream)
+        {
+            var config = llm.LLMConfig ?? throw new Exception("LLM configuration is missing");
+
+            var messageHistory = await supabase.From<MessageEntity>()
+                .Where(msg => msg.LLMId == llm.Id)
+                .Order("id", Supabase.Postgrest.Constants.Ordering.Descending)
+                .Limit(9)
+                .Get();
+
+            var messages = messageHistory.Models
+                .OrderBy(msg => msg.Id)
+                .Select(msg => new { role = msg.Role, content = msg.Content })
+                .ToList();
+
+            messages.Add(new { role = "user", content = message });
+
+            if (!string.IsNullOrWhiteSpace(config.SystemPrompt))
+                messages.Insert(0, new { role = "system", content = config.SystemPrompt });
+
+            return new
+            {
+                model = config.Model,
+                messages,
+                stream,
+                options = new
+                {
+                    temperature = config.Temperature,
+                    num_predict = config.MaxTokens,
+                    top_p = config.TopP,
+                    top_k = config.TopK,
+                    repeat_penalty = config.RepeatPenalty,
+                    seed = config.Seed
+                }
+            };
+        }
+
+        private static async Task<MessageResponseDto> SaveMessagesAsync(Supabase.Client supabase, int id, string message, DateTime sentAt, string llmResponse)
+        {
+            var inserted = await supabase.From<MessageEntity>().Insert(new List<MessageEntity>
+            {
+                new() { Role = "user", Content = message, LLMId = id, CreatedAt = sentAt },
+                new() { Role = "assistant", Content = llmResponse, LLMId = id, CreatedAt = DateTime.UtcNow }
+            });
+
+            if (inserted.Models.Count != 2)
+                throw new Exception("Failed to save messages");
+
+            return new MessageResponseDto
+            {
+                UserMessage = ToMessage(inserted.Models[0]),
+                AssistantMessage = ToMessage(inserted.Models[1])
+            };
+        }
+
+        private static Message ToMessage(MessageEntity entity) => new()
+        {
+            Id = entity.Id,
+            Role = entity.Role,
+            Content = entity.Content,
+            CreatedAt = entity.CreatedAt
+        };
     }
 }
