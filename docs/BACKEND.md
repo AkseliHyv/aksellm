@@ -16,36 +16,9 @@ The backend is an ASP.NET Core 10 API in C#. It authenticates requests with toke
 
 ## Configure
 
-### CORS & Supabase
+### Supabase & Ollama
 
-Create `backend/appsettings.Development.json`:
-
-```json
-{
-  "AllowedOrigins": "http://localhost:5173",
-  "Supabase": {
-    "Url": "<your-supabase-project-url>",
-    "PublicKey": "<your-supabase-publishable-key>"
-  }
-}
-```
-
-| Field | Purpose |
-|---|---|
-| `AllowedOrigins` | Comma-separated list of origins allowed by CORS. Must include the frontend's origin. |
-| `Supabase:Url` | The project URL from Supabase's API settings. |
-| `Supabase:PublicKey` | The project's publishable (anon) key. |
-
-### Ollama URL
-
-The backend sends requests to Ollama at `http://localhost:11434` by default.
-Override it with the following field in `backend/appsettings.Development.json`:
-
-```
-"Ollama": {
-  "BaseUrl": "http://localhost:11434" // Line to change
-}
-```
+The backend reads its Supabase keys and Ollama URL from the `.env` file in the repository root, see [Configure](../README.md#configure).
 
 ### URL to run on
 
@@ -63,6 +36,8 @@ Override it from `backend/Properties/launchSettings.json`:
       }
     },
 ```
+
+If the port is changed, update the proxy target in `frontend/vite.config.ts` to match.
 
 ## Run
 

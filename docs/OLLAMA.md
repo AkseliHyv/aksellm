@@ -23,7 +23,33 @@ Override it with the `OLLAMA_HOST` environment variable:
 OLLAMA_HOST=0.0.0.0:11434 ollama serve
 ```
 
-If the URL is changed, the backend must be configured to match, see [Backend](BACKEND.md).
+If Ollama runs as a systemd service, set the variable in the service instead:
+
+```
+sudo systemctl edit ollama
+```
+
+```
+[Service]
+Environment="OLLAMA_HOST=0.0.0.0:11434"
+```
+
+### Backend connection
+
+The backend sends requests to Ollama at `http://localhost:11434` by default.
+Override it with the following line in the `.env` file in the repository root:
+
+```
+Ollama__BaseUrl=http://localhost:11434
+```
+
+| Setup | Value |
+|---|---|
+| Dev mode, Ollama on the same machine | `http://localhost:11434` (default, the line can be left out) |
+| Container, Ollama on the host | `http://host.docker.internal:11434` |
+| Ollama on another machine | `http://<ollama-host-ip>:11434` |
+
+Note that the last two require Ollama to accept connections from outside the host, see [URL to run on](#url-to-run-on). The port must match the one set in `OLLAMA_HOST`.
 
 ## Run
 

@@ -18,12 +18,19 @@ It uses Tailwind CSS v4 for styling and Zustand for state.
 
 ### Backend URL
 
-The frontend sends requests to `http://localhost:8000` by default.
-Override with a .env file in `frontend/` with the following line:
+The frontend forwards requests under `/api` to `http://localhost:8000` by default.
+Override it from `frontend/vite.config.ts`:
 
 ```
-VITE_API_URL=https://api.example.com
+server: {
+    ...
+    proxy: {
+      '/api': 'http://localhost:8000' // Line to change
+    }
+  }
 ```
+
+This only applies in dev mode. In the container, the backend serves the frontend itself.
 
 ### URL to run on
 
@@ -31,12 +38,10 @@ The frontend points to `http://localhost:5173` by default.
 Override it from `frontend/vite.config.ts`:
 
 ```
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  server: {
-    port: 5173 // Line to change
+server: {
+    port: 5173, // Line to change
+    ...
   }
-})
 ```
 
 ## Run
