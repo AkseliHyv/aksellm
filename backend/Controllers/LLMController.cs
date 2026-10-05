@@ -19,7 +19,7 @@ namespace backend.Controllers
         private readonly ILogger<LLMController> _logger;
         private readonly ILLMService _llmService;
 
-        public LLMController(ILLMService llmService)
+        public LLMController(ILogger<LLMController> logger, ILLMService llmService)
         {
             _logger = logger;
             _llmService = llmService;
