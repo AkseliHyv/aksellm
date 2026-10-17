@@ -100,5 +100,4 @@ Any existing llm configuration using a removed model will be unable to provide r
 ## Remaining work
 
 - Passing `StopSequences` to Ollama. The field is stored but nothing sends it yet.
-- Streaming the response back to the frontend. The `stream` toggle exists in the LLM configuration model but nothing reads it yet.
 - Any check that a configured model is actually pulled before a message is sent.

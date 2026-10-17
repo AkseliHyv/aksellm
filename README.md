@@ -4,16 +4,18 @@
 
 A self-hosted web app for managing and chatting with local LLM configurations that run on [Ollama](https://ollama.com). Users can create multiple named model configurations, each with its own parameters and system prompt, and chat with them through a persistent message history.
 
+![A response streaming in AkseLLM](docs/assets/streaming.gif)
+
 ## Status
 
-Core infrastructure, authentication, LLM configuration management and model inference are complete. AkseLLM can be run as a single container or as separate processes in dev mode. Responses are not yet streamed.
+Core infrastructure, authentication, LLM configuration management and model inference with streamed responses are complete. AkseLLM can be run as a single container or as separate processes in dev mode.
 
 ## Core Features
 
 - Register and log in with email and password
 - Create, edit and delete custom LLM configurations
 - Configure model parameters per LLM (sampling, penalties, seed, streaming, stop sequences, system prompt)
-- Have discussions with owned LLM configurations, with responses rendered as:
+- Have discussions with owned LLM configurations, with responses streamed as they are generated and rendered as:
   - Markdown, including tables, task lists and strikethrough
   - Syntax-highlighted code blocks with a copy button
   - Math written in LaTeX, using `$...$`, `$$...$$`, `\(...\)` or `\[...\]`
@@ -21,7 +23,7 @@ Core infrastructure, authentication, LLM configuration management and model infe
 
 ## Not yet implemented
 
-- Response streaming and stop sequences, see [Ollama integration](docs/OLLAMA.md)
+- Applying stop sequences, see [Ollama integration](docs/OLLAMA.md)
 - Listing models dynamically from the connected Ollama instance
 
 ## Tech stack
@@ -33,7 +35,7 @@ Core infrastructure, authentication, LLM configuration management and model infe
 | Backend | ASP.NET Core 10, C# |
 | Auth / DB | JWT, Supabase (Gotrue + Postgrest) |
 | Models | Ollama |
-| Infra | Docker |
+| Infra | Docker, GitHub Actions (image published to GHCR) |
 
 ## Prerequisites
 

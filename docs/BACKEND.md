@@ -102,3 +102,4 @@ No `Authorization` header is used.
 |---|---|---|
 | GET | `/api/llm/{id}/chat` | Get the last 50 messages for an LLM |
 | POST | `/api/llm/{id}/chat` | Send a message and get the model's response, see [Ollama integration](OLLAMA.md). Returns 409 if this LLM is already generating a response |
+| POST | `/api/llm/{id}/chat/stream` | Send a message and stream the model's response as NDJSON. Returns 409 if this LLM is already generating a response |
