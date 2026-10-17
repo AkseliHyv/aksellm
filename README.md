@@ -1,6 +1,6 @@
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-red.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-# AkseLLM
+# <img src="docs/assets/aksellm.png" alt="AkseLLM" width="360">
 
 A self-hosted web app for managing and chatting with local LLM configurations that run on [Ollama](https://ollama.com). Users can create multiple named model configurations, each with its own parameters and system prompt, and chat with them through a persistent message history.
 
