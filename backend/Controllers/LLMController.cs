@@ -1,15 +1,18 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using backend.Helpers;
 using backend.Models.DTOs.LLM;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace backend.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting(RateLimitHelper.General)]
     public class LLMController : ControllerBase
     {
         private static readonly JsonSerializerOptions StreamJsonOptions = new(JsonSerializerDefaults.Web)
@@ -63,12 +66,14 @@ namespace backend.Controllers
             return Ok(await _llmService.GetLLMMessagesAsync(id));
         }
 
+        [EnableRateLimiting(RateLimitHelper.Chat)]
         [HttpPost("{id}/chat")]
         public async Task<ActionResult<MessageResponseDto>> SendMessage(int id, [FromBody] string message)
         {
             return Created(string.Empty, await _llmService.SendMessageAsync(id, message));
         }
 
+        [EnableRateLimiting(RateLimitHelper.Chat)]
         [HttpPost("{id}/chat/stream")]
         public async Task StreamMessage(int id, [FromBody] string message)
         {

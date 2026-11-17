@@ -57,7 +57,7 @@ dotnet test
 ```
 
 The tests run the API in memory and do not need Supabase or Ollama.
-They cover authentication, error handling and input validation.
+They cover authentication, rate limiting, error handling and input validation.
 
 ## Project structure
 
@@ -69,7 +69,7 @@ backend/
     Common/            # LLMConfig, LLMModel, Message, UserProfile, LLMProvider, ProviderModels
     Domain/            # LLMEntity, MessageEntity (Postgrest ORM entities)
     DTOs/              # Request and response shapes
-  Helpers/             # CookieHelper, SupabaseHelper, MetadataHelper, JwksRetriever
+  Helpers/             # CookieHelper, SupabaseHelper, MetadataHelper, JwksRetriever, RateLimitHelper
   Filters/             # ExceptionFilter* (maps exceptions to HTTP status codes)
   Exceptions/          # NotFoundException, ValidationException, ConflictException
   Validation/          # ValidModelForProviderAttribute
@@ -87,6 +87,7 @@ Auth tokens are stored in HttpOnly cookies (`token`, `refreshToken`, `SameSite=S
 No `Authorization` header is used.
 Expired or invalid tokens return `401`.
 Expired tokens are renewed with `/api/auth/refresh`, which the frontend calls on a `401` before retrying the request once.
+Requests over a rate limit return `429`, see [Rate limits](#rate-limits).
 
 ### Auth
 
@@ -114,5 +115,14 @@ Expired tokens are renewed with `/api/auth/refresh`, which the frontend calls on
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/llm/{id}/chat` | Get the last 50 messages for an LLM |
-| POST | `/api/llm/{id}/chat` | Send a message and get the model's response, see [Ollama integration](OLLAMA.md). Returns 409 if this LLM is already generating a response |
-| POST | `/api/llm/{id}/chat/stream` | Send a message and stream the model's response as NDJSON. Returns 409 if this LLM is already generating a response |
+| POST | `/api/llm/{id}/chat` | Send a message and get the model's response, see [Ollama integration](OLLAMA.md). Returns 429 if the user already has a response generating |
+| POST | `/api/llm/{id}/chat/stream` | Send a message and stream the model's response as NDJSON. Returns 429 if the user already has a response generating |
+
+### Rate limits
+
+| Endpoints | Limit | Counted per |
+|---|---|---|
+| `register`, `login` | 5 requests per minute in total, as a sliding window | IP address |
+| `refresh` | 30 requests per minute | IP address |
+| `POST chat`, `POST chat/stream` | 1 response generating at a time | User |
+| Everything else | 120 requests per minute | User |

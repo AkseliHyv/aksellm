@@ -1,7 +1,9 @@
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Text;
 using backend.Models.Common;
 using backend.Models.DTOs.Auth;
+using backend.Models.DTOs.LLM;
 using backend.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -13,7 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 namespace backend.Tests.Helpers
 {
     // Runs the real app in memory with the legacy JWT secret, so tokens can be signed in tests.
-    // IAuthService is replaced with a fake, so no request reaches Supabase.
+    // IAuthService and ILLMService are replaced with fakes, so no request reaches Supabase or Ollama.
     public class TestAppFactory : WebApplicationFactory<Program>
     {
         public const string SupabaseUrl = "http://supabase.test";
@@ -22,6 +24,8 @@ namespace backend.Tests.Helpers
         public const string JwtSecret = "test-jwt-secret-that-is-at-least-32-bytes-long";
 
         public FakeAuthService AuthService { get; } = new();
+
+        public FakeLLMService LLMService { get; } = new();
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -39,6 +43,8 @@ namespace backend.Tests.Helpers
                     AuthService.UserClient = sp.GetRequiredService<ISupabaseUserClient>();
                     return AuthService;
                 });
+
+                services.AddSingleton<ILLMService>(LLMService);
             });
         }
 
@@ -82,24 +88,67 @@ namespace backend.Tests.Helpers
 
         public Task<AuthResponseDto> GetCurrentUserAsync()
         {
-            var authResponseDto = new AuthResponseDto
+            return Task.FromResult(CreateResponse(UserClient!.UserId));
+        }
+
+        public Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> RegisterAsync(RegisterDto registerDto)
+        {
+            return Task.FromResult((CreateResponse("user-123"), "token", "refresh-token"));
+        }
+
+        public Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> LoginAsync(LoginDto loginDto)
+        {
+            return Task.FromResult((CreateResponse("user-123"), "token", "refresh-token"));
+        }
+
+        public Task LogoutAsync(string token, string refreshToken) => throw new NotImplementedException();
+        public Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto) => throw new NotImplementedException();
+
+        private static AuthResponseDto CreateResponse(string userId)
+        {
+            return new AuthResponseDto
             {
                 User = new UserProfile
                 {
-                    Id = UserClient!.UserId,
+                    Id = userId,
                     Username = "tester",
                     Email = "tester@example.com",
                     Theme = "Catppuccin",
                     CreatedAt = DateTime.UtcNow
                 }
             };
+        }
+    }
 
-            return Task.FromResult(authResponseDto);
+    // Streams wait until ReleaseStreams() is called, so a test can keep a chat request running.
+    public class FakeLLMService : ILLMService
+    {
+        private readonly TaskCompletionSource _release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _startedStreams;
+
+        public int StartedStreams => _startedStreams;
+
+        public void ReleaseStreams() => _release.TrySetResult();
+
+        public async IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            Interlocked.Increment(ref _startedStreams);
+            yield return new StreamEventDto { Type = "start" };
+
+            await _release.Task.WaitAsync(cancellationToken);
+            yield return new StreamEventDto { Type = "chunk", Content = "Hello" };
         }
 
-        public Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> RegisterAsync(RegisterDto registerDto) => throw new NotImplementedException();
-        public Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> LoginAsync(LoginDto loginDto) => throw new NotImplementedException();
-        public Task LogoutAsync(string token, string refreshToken) => throw new NotImplementedException();
-        public Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto) => throw new NotImplementedException();
+        public Task<LLMResponseDto> GetAllLLMsAsync()
+        {
+            return Task.FromResult(new LLMResponseDto { LLMs = [] });
+        }
+
+        public Task<LLMResponseDto> GetLLMByIdAsync(int id) => throw new NotImplementedException();
+        public Task<LLMResponseDto> CreateLLMAsync(CreateLLMDto createLLMDto) => throw new NotImplementedException();
+        public Task<LLMResponseDto> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto) => throw new NotImplementedException();
+        public Task DeleteLLMAsync(int id) => throw new NotImplementedException();
+        public Task<GetMessagesDto> GetLLMMessagesAsync(int id) => throw new NotImplementedException();
+        public Task<MessageResponseDto> SendMessageAsync(int id, string message) => throw new NotImplementedException();
     }
 }

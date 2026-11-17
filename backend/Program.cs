@@ -8,6 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using backend.Filters;
 using backend.Helpers;
 using backend.Services;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,46 +42,89 @@ builder.Services.AddCors(options =>
 var supabaseUrl = builder.Configuration["Supabase:Url"]!.TrimEnd('/');
 var supabaseJwtSecret = builder.Configuration["Supabase:JwtSecret"];
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.MapInboundClaims = false;
+        ValidIssuer = $"{supabaseUrl}/auth/v1",
+        ValidAudience = "authenticated",
+        ClockSkew = TimeSpan.Zero
+    };
 
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidIssuer = $"{supabaseUrl}/auth/v1",
-            ValidAudience = "authenticated",
-            ClockSkew = TimeSpan.Zero
-        };
+    if (!string.IsNullOrWhiteSpace(supabaseJwtSecret))
+    {
+        options.TokenValidationParameters.IssuerSigningKey =
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabaseJwtSecret));
+    }
+    else
+    {
+        options.ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+            $"{supabaseUrl}/auth/v1/.well-known/jwks.json",
+            new JwksRetriever(),
+            new HttpDocumentRetriever { RequireHttps = supabaseUrl.StartsWith("https://") });
+    }
 
-        if (!string.IsNullOrWhiteSpace(supabaseJwtSecret))
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = ctx =>
         {
-            options.TokenValidationParameters.IssuerSigningKey =
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabaseJwtSecret));
+            ctx.Token = ctx.Request.Cookies["token"];
+            return Task.CompletedTask;
+        },
+        OnChallenge = async ctx =>
+        {
+            ctx.HandleResponse();
+            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            await ctx.Response.WriteAsJsonAsync(new { message = "Unauthorized. Please authenticate and try again." });
         }
-        else
-        {
-            options.ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{supabaseUrl}/auth/v1/.well-known/jwks.json",
-                new JwksRetriever(),
-                new HttpDocumentRetriever { RequireHttps = supabaseUrl.StartsWith("https://") });
-        }
+    };
+});
 
-        options.Events = new JwtBearerEvents
+builder.Services.AddRateLimiter(options =>
+{
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var response = context.HttpContext.Response;
+
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            response.Headers.RetryAfter = ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString();
+
+        response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await response.WriteAsJsonAsync(new { message = "Too many requests. Please try again shortly." }, cancellationToken);
+    };
+
+    options.AddPolicy(RateLimitHelper.Auth, context =>
+        RateLimitPartition.GetSlidingWindowLimiter(RateLimitHelper.GetClientKey(context), _ => new SlidingWindowRateLimiterOptions
         {
-            OnMessageReceived = ctx =>
-            {
-                ctx.Token = ctx.Request.Cookies["token"];
-                return Task.CompletedTask;
-            },
-            OnChallenge = async ctx =>
-            {
-                ctx.HandleResponse();
-                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                await ctx.Response.WriteAsJsonAsync(new { message = "Unauthorized. Please authenticate and try again." });
-            }
-        };
-    });
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            SegmentsPerWindow = 6
+        }));
+
+    options.AddPolicy(RateLimitHelper.Refresh, context =>
+        RateLimitPartition.GetFixedWindowLimiter(RateLimitHelper.GetClientKey(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1)
+        }));
+
+    options.AddPolicy(RateLimitHelper.Chat, context =>
+        RateLimitPartition.GetConcurrencyLimiter(RateLimitHelper.GetUserKey(context), _ => new ConcurrencyLimiterOptions
+        {
+            PermitLimit = 1,
+            QueueLimit = 0
+        }));
+
+    options.AddPolicy(RateLimitHelper.General, context =>
+        RateLimitPartition.GetFixedWindowLimiter(RateLimitHelper.GetUserKey(context), _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1)
+        }));
+});
+
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 
@@ -115,6 +160,7 @@ app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 app.MapFallbackToFile("index.html");

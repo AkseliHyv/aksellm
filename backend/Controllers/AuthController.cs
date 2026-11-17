@@ -4,11 +4,13 @@ using backend.Models.DTOs.LLM;
 using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace backend.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting(RateLimitHelper.General)]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -18,6 +20,7 @@ namespace backend.Controllers
             _authService = authService;
         }
 
+        [EnableRateLimiting(RateLimitHelper.Auth)]
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto registerDto)
         {
@@ -26,6 +29,7 @@ namespace backend.Controllers
             return Created(string.Empty, result);
         }
 
+        [EnableRateLimiting(RateLimitHelper.Auth)]
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto loginDto)
         {
@@ -34,6 +38,7 @@ namespace backend.Controllers
             return Ok(result);
         }
 
+        [EnableRateLimiting(RateLimitHelper.Refresh)]
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh()
         {
