@@ -51,7 +51,11 @@ namespace backend.Filters
 
                 var errorMessage = ParseSupabaseError(context.Exception.Message);
 
-                if (statusCode == 0 || statusCode >= 500)
+                if (statusCode == StatusCodes.Status401Unauthorized)
+                {
+                    context.Result = new UnauthorizedObjectResult(new { message = "Unauthorized. Please authenticate and try again." });
+                }
+                else if (statusCode == 0 || statusCode >= 500)
                 {
                     _logger.LogError(context.Exception, "Supabase infrastructure error: {Message}", context.Exception.Message);
                     context.Result = new ObjectResult(new { message = "A dependent service is unavailable. Please try again shortly." })

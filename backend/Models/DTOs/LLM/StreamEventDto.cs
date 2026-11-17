@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using backend.Models.Common;
 
 namespace backend.Models.DTOs.LLM
@@ -12,11 +11,5 @@ namespace backend.Models.DTOs.LLM
         public Message? UserMessage { get; set; }
 
         public Message? AssistantMessage { get; set; }
-
-        [JsonIgnore]
-        public string? NewToken { get; set; }
-
-        [JsonIgnore]
-        public string? NewRefreshToken { get; set; }
     }
 }

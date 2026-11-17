@@ -6,7 +6,7 @@ This page contains the steps required to get the backend up and running.
 
 ## Prerequisite Information
 
-The backend is an ASP.NET Core 10 API in C#. It authenticates requests with tokens stored in HttpOnly cookies and forwards them to Supabase for both authentication and data access.
+The backend is an ASP.NET Core 10 API in C#. It authenticates requests with tokens stored in HttpOnly cookies, validates them itself and forwards them to Supabase for data access.
 
 ## Prerequisites
 
@@ -54,12 +54,12 @@ This makes the backend run on the defined url, which is by default ``http://loca
 ```text
 backend/
   Controllers/         # AuthController, LLMController
-  Services/            # AuthService, LLMService
+  Services/            # AuthService, LLMService, SupabaseUserClient
   Models/
     Common/            # LLMConfig, LLMModel, Message, UserProfile, LLMProvider, ProviderModels
     Domain/            # LLMEntity, MessageEntity (Postgrest ORM entities)
     DTOs/              # Request and response shapes
-  Helpers/             # CookieHelper, SupabaseHelper, MetadataHelper
+  Helpers/             # CookieHelper, SupabaseHelper, MetadataHelper, JwksRetriever
   Filters/             # ExceptionFilter* (maps exceptions to HTTP status codes)
   Exceptions/          # NotFoundException, ValidationException, ConflictException
   Validation/          # ValidModelForProviderAttribute
@@ -75,6 +75,7 @@ backend/
 All endpoints are under `/api`.
 Auth tokens are stored in HttpOnly cookies (`token`, `refreshToken`, `SameSite=Strict`) and sent automatically by the browser with `credentials: include`.
 No `Authorization` header is used.
+Expired or invalid tokens return `401`.
 
 ### Auth
 

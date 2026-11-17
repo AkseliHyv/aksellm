@@ -1,6 +1,12 @@
+using System.Text;
 using System.Text.Json.Serialization;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
 using backend.Filters;
+using backend.Helpers;
 using backend.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +37,52 @@ builder.Services.AddCors(options =>
     });
 });
 
+var supabaseUrl = builder.Configuration["Supabase:Url"]!.TrimEnd('/');
+var supabaseJwtSecret = builder.Configuration["Supabase:JwtSecret"];
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidIssuer = $"{supabaseUrl}/auth/v1",
+            ValidAudience = "authenticated",
+            ClockSkew = TimeSpan.Zero
+        };
+
+        if (!string.IsNullOrWhiteSpace(supabaseJwtSecret))
+        {
+            options.TokenValidationParameters.IssuerSigningKey =
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabaseJwtSecret));
+        }
+        else
+        {
+            options.ConfigurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+                $"{supabaseUrl}/auth/v1/.well-known/jwks.json",
+                new JwksRetriever(),
+                new HttpDocumentRetriever { RequireHttps = supabaseUrl.StartsWith("https://") });
+        }
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                ctx.Token = ctx.Request.Cookies["token"];
+                return Task.CompletedTask;
+            },
+            OnChallenge = async ctx =>
+            {
+                ctx.HandleResponse();
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await ctx.Response.WriteAsJsonAsync(new { message = "Unauthorized. Please authenticate and try again." });
+            }
+        };
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ExceptionFilter>();
@@ -40,6 +92,7 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+builder.Services.AddScoped<ISupabaseUserClient, SupabaseUserClient>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpClient<ILLMService, LLMService>(client =>
 {
@@ -59,6 +112,9 @@ app.UseCors(corsPolicy);
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.MapFallbackToFile("index.html");

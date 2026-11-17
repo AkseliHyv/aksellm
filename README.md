@@ -55,6 +55,7 @@ Supabase__PublicKey=<your-supabase-publishable-key>
 |---|---|
 | `Supabase__Url` | The project URL from Supabase's API settings. |
 | `Supabase__PublicKey` | The project's publishable (anon) key. |
+| `Supabase__JwtSecret` | Optional. The project's legacy JWT secret, only needed if the project does not use signing keys. |
 | `Ollama__BaseUrl` | Optional. The Ollama URL, `http://localhost:11434` by default. |
 
 When running as a container, the file can be in any folder and the repository is not needed. In dev mode, the file must be in the repository root.

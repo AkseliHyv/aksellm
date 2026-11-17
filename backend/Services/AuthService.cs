@@ -11,11 +11,11 @@ namespace backend.Services
         Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> RegisterAsync(RegisterDto registerDto);
         Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> LoginAsync(LoginDto loginDto);
         Task LogoutAsync(string token, string refreshToken);
-        Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> GetCurrentUserAsync(string token, string refreshToken);
-        Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> UpdateCurrentUserAsync(UpdateUserDto updateUserDto, string token, string refreshToken);
+        Task<AuthResponseDto> GetCurrentUserAsync();
+        Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto);
     }
 
-    public class AuthService : IAuthService
+    public class AuthService(ISupabaseUserClient userClient) : IAuthService
     {
         public async Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> RegisterAsync(RegisterDto registerDto)
         {
@@ -105,14 +105,10 @@ namespace backend.Services
             await supabase.Auth.SignOut();
         }
 
-        public async Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> GetCurrentUserAsync(string token, string refreshToken)
+        public async Task<AuthResponseDto> GetCurrentUserAsync()
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var user = await SupabaseHelper.GetAuthApi().GetUser(userClient.AccessToken)
+                ?? throw new UnauthorizedAccessException("Invalid or expired session");
 
             var metadata = MetadataHelper.GetMetadata(user);
 
@@ -128,20 +124,18 @@ namespace backend.Services
                 }
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (authResponseDto, newToken, newRefreshToken);
+            return authResponseDto;
         }
 
-        public async Task<(AuthResponseDto authResponseDto, string? newToken, string? newRefreshToken)> UpdateCurrentUserAsync(UpdateUserDto updateUserDto, string token, string refreshToken)
+        public async Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto)
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
+            var authApi = SupabaseHelper.GetAuthApi();
+            var token = userClient.AccessToken;
 
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var user = await authApi.GetUser(token)
+                ?? throw new UnauthorizedAccessException("Invalid or expired session");
 
-            var metadata = MetadataHelper.GetMetadata(user!);
+            var metadata = MetadataHelper.GetMetadata(user);
             var userAttributes = new UserAttributes();
 
             if (updateUserDto.DisplayName != null)
@@ -151,15 +145,14 @@ namespace backend.Services
                 metadata["theme"] = updateUserDto.Theme;
 
             userAttributes.Data = metadata;
-            await supabase.Auth.Update(userAttributes);
-
-            user = supabase.Auth.CurrentUser;
+            user = await authApi.UpdateUser(token, userAttributes)
+                ?? throw new UnauthorizedAccessException("Invalid or expired session");
 
             var authResponseDto = new AuthResponseDto
             {
                 User = new UserProfile
                 {
-                    Id = user!.Id!,
+                    Id = user.Id!,
                     Username = metadata["display_name"].ToString()!,
                     Email = user.Email!,
                     Theme = metadata["theme"].ToString()!,
@@ -167,8 +160,7 @@ namespace backend.Services
                 }
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (authResponseDto, newToken, newRefreshToken);
+            return authResponseDto;
         }
 
         private void ValidateUsername(string username)

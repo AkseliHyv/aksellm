@@ -1,5 +1,4 @@
 using backend.Exceptions;
-using backend.Helpers;
 using backend.Models.Common;
 using backend.Models.Domain;
 using backend.Models.DTOs.LLM;
@@ -13,34 +12,30 @@ namespace backend.Services
 {
     public interface ILLMService
     {
-        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetAllLLMsAsync(string token, string refreshToken);
-        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetLLMByIdAsync(int id, string token, string refreshToken);
-        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> CreateLLMAsync(CreateLLMDto createLLMDto, string token, string refreshToken);
-        Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto, string token, string refreshToken);
-        Task<(string? newToken, string? newRefreshToken)> DeleteLLMAsync(int id, string token, string refreshToken);
-        Task<(GetMessagesDto result, string? newToken, string? newRefreshToken)> GetLLMMessagesAsync(int id, string token, string refreshToken);
-        Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken);
-        IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, string token, string refreshToken, CancellationToken cancellationToken);
+        Task<LLMResponseDto> GetAllLLMsAsync();
+        Task<LLMResponseDto> GetLLMByIdAsync(int id);
+        Task<LLMResponseDto> CreateLLMAsync(CreateLLMDto createLLMDto);
+        Task<LLMResponseDto> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto);
+        Task DeleteLLMAsync(int id);
+        Task<GetMessagesDto> GetLLMMessagesAsync(int id);
+        Task<MessageResponseDto> SendMessageAsync(int id, string message);
+        IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, CancellationToken cancellationToken);
     }
 
-    public class LLMService(HttpClient httpClient) : ILLMService
+    public class LLMService(HttpClient httpClient, ISupabaseUserClient userClient) : ILLMService
     {
         private static readonly JsonSerializerOptions OllamaJsonOptions = new()
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
-        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetAllLLMsAsync(string token, string refreshToken)
+        public async Task<LLMResponseDto> GetAllLLMsAsync()
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var result = await supabase.From<LLMEntity>()
-                .Where(x => x.UserId == user.Id)
+                .Where(x => x.UserId == userId)
                 .Get();
 
             var response = new LLMResponseDto
@@ -54,21 +49,16 @@ namespace backend.Services
                 })
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (response, newToken, newRefreshToken);
+            return response;
         }
 
-        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> GetLLMByIdAsync(int id, string token, string refreshToken)
+        public async Task<LLMResponseDto> GetLLMByIdAsync(int id)
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var result = await supabase.From<LLMEntity>()
-                .Where(x => x.UserId == user.Id && x.Id == id)
+                .Where(x => x.UserId == userId && x.Id == id)
                 .Get();
 
             var llm = result.Models.FirstOrDefault();
@@ -89,22 +79,17 @@ namespace backend.Services
                 }
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (response, newToken, newRefreshToken);
+            return response;
         }
 
-        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> CreateLLMAsync(CreateLLMDto createLLMDto, string token, string refreshToken)
+        public async Task<LLMResponseDto> CreateLLMAsync(CreateLLMDto createLLMDto)
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null || user.Id == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var newLLM = new LLMEntity
             {
-                UserId = user.Id,
+                UserId = userId,
                 Name = createLLMDto.Name,
                 LLMConfig = createLLMDto.Config,
                 CreatedAt = DateTime.UtcNow
@@ -130,21 +115,16 @@ namespace backend.Services
                 }
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (response, newToken, newRefreshToken);
+            return response;
         }
 
-        public async Task<(LLMResponseDto result, string? newToken, string? newRefreshToken)> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto, string token, string refreshToken)
+        public async Task<LLMResponseDto> UpdateLLMAsync(int id, UpdateLLMDto updateLLMDto)
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var exists = await supabase.From<LLMEntity>()
-                .Where(x => x.UserId == user.Id)
+                .Where(x => x.UserId == userId)
                 .Where(x => x.Id == id)
                 .Get();
 
@@ -179,21 +159,16 @@ namespace backend.Services
                 }
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (response, newToken, newRefreshToken);
+            return response;
         }
 
-        public async Task<(string? newToken, string? newRefreshToken)> DeleteLLMAsync(int id, string token, string refreshToken)
+        public async Task DeleteLLMAsync(int id)
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var exists = await supabase.From<LLMEntity>()
-                .Where(x => x.UserId == user.Id)
+                .Where(x => x.UserId == userId)
                 .Where(x => x.Id == id)
                 .Get();
 
@@ -205,21 +180,15 @@ namespace backend.Services
             await supabase.From<LLMEntity>()
                 .Where(x => x.Id == id)
                 .Delete();
-
-            return SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
         }
 
-        public async Task<(GetMessagesDto result, string? newToken, string? newRefreshToken)> GetLLMMessagesAsync(int id, string token, string refreshToken)
+        public async Task<GetMessagesDto> GetLLMMessagesAsync(int id)
         {
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var exists = await supabase.From<LLMEntity>()
-                .Where(x => x.UserId == user.Id && x.Id == id)
+                .Where(x => x.UserId == userId && x.Id == id)
                 .Get();
 
             var llm = exists.Models.FirstOrDefault();
@@ -243,13 +212,12 @@ namespace backend.Services
                 }).Reverse().ToList()
             };
 
-            var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-            return (response, newToken, newRefreshToken);
+            return response;
         }
 
-        public async Task<(MessageResponseDto result, string? newToken, string? newRefreshToken)> SendMessageAsync(int id, string message, string token, string refreshToken)
+        public async Task<MessageResponseDto> SendMessageAsync(int id, string message)
         {
-            var (supabase, session, llm) = await ClaimGenerationAsync(id, message, token, refreshToken);
+            var (supabase, llm) = await ClaimGenerationAsync(id, message);
 
             try
             {
@@ -265,8 +233,7 @@ namespace backend.Services
 
                 var response = await SaveMessagesAsync(supabase, id, message, sentAt, llmResponse);
 
-                var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-                return (response, newToken, newRefreshToken);
+                return response;
             }
             finally
             {
@@ -274,9 +241,9 @@ namespace backend.Services
             }
         }
 
-        public async IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, string token, string refreshToken, [EnumeratorCancellation] CancellationToken cancellationToken)
+        public async IAsyncEnumerable<StreamEventDto> StreamMessageAsync(int id, string message, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var (supabase, session, llm) = await ClaimGenerationAsync(id, message, token, refreshToken);
+            var (supabase, llm) = await ClaimGenerationAsync(id, message);
 
             try
             {
@@ -291,8 +258,7 @@ namespace backend.Services
                 using var httpResponse = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                 httpResponse.EnsureSuccessStatusCode();
 
-                var (newToken, newRefreshToken) = SupabaseHelper.GetRefreshedTokens(session, token, refreshToken);
-                yield return new StreamEventDto { Type = "session", NewToken = newToken, NewRefreshToken = newRefreshToken };
+                yield return new StreamEventDto { Type = "start" };
 
                 await using var stream = await httpResponse.Content.ReadAsStreamAsync(cancellationToken);
                 using var reader = new StreamReader(stream);
@@ -338,20 +304,16 @@ namespace backend.Services
             }
         }
 
-        private static async Task<(Supabase.Client supabase, Supabase.Gotrue.Session session, LLMEntity llm)> ClaimGenerationAsync(int id, string message, string token, string refreshToken)
+        private async Task<(Supabase.Client supabase, LLMEntity llm)> ClaimGenerationAsync(int id, string message)
         {
             if (string.IsNullOrWhiteSpace(message))
                 throw new ValidationException("No message given");
 
-            var supabase = await SupabaseHelper.GetClientAsync();
-            var session = await supabase.Auth.SetSession(token, refreshToken);
-
-            var user = supabase.Auth.CurrentUser;
-            if (user == null || user.Id == null)
-                throw new UnauthorizedAccessException("Invalid or expired session");
+            var supabase = await userClient.GetClientAsync();
+            var userId = userClient.UserId;
 
             var exists = await supabase.From<LLMEntity>()
-                .Where(x => x.UserId == user.Id && x.Id == id)
+                .Where(x => x.UserId == userId && x.Id == id)
                 .Get();
 
             var llm = exists.Models.FirstOrDefault();
@@ -362,7 +324,7 @@ namespace backend.Services
             if (!claimed)
                 throw new ConflictException("This LLM is already generating a response, please wait or try again later");
 
-            return (supabase, session, llm);
+            return (supabase, llm);
         }
 
         private static async Task<object> BuildChatRequestAsync(Supabase.Client supabase, LLMEntity llm, string message, bool stream)

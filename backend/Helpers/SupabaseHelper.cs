@@ -2,15 +2,31 @@ namespace backend.Helpers
 {
     public static class SupabaseHelper
     {
-        public static (string? Token, string? RefreshToken) GetRefreshedTokens(Supabase.Gotrue.Session session, string originalToken, string originalRefreshToken)
+        public static async Task<Supabase.Client> GetClientAsync(string? accessToken = null)
         {
-            if (session.AccessToken == null || session.AccessToken == originalToken)
-                return (null, null);
+            var (url, key) = GetConfig();
 
-            return (session.AccessToken, session.RefreshToken);
+            var options = new Supabase.SupabaseOptions
+            {
+                AutoConnectRealtime = false
+            };
+
+            if (accessToken != null)
+                options.Headers["Authorization"] = $"Bearer {accessToken}";
+
+            var supabase = new Supabase.Client(url, key, options);
+            await supabase.InitializeAsync();
+
+            return supabase;
         }
 
-        public static async Task<Supabase.Client> GetClientAsync()
+        public static Supabase.Gotrue.Api GetAuthApi()
+        {
+            var (url, key) = GetConfig();
+            return new Supabase.Gotrue.Api($"{url.TrimEnd('/')}/auth/v1", new Dictionary<string, string> { ["apikey"] = key });
+        }
+
+        private static (string url, string key) GetConfig()
         {
             var url = Environment.GetEnvironmentVariable("SUPABASE_URL");
             var key = Environment.GetEnvironmentVariable("SUPABASE_PUBLIC_KEY");
@@ -18,15 +34,7 @@ namespace backend.Helpers
             if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(key))
                 throw new InvalidOperationException("SUPABASE_URL and SUPABASE_PUBLIC_KEY must be set");
 
-            var options = new Supabase.SupabaseOptions
-            {
-                AutoConnectRealtime = false
-            };
-
-            var supabase = new Supabase.Client(url, key, options);
-            await supabase.InitializeAsync();
-
-            return supabase;
+            return (url, key);
         }
     }
 }

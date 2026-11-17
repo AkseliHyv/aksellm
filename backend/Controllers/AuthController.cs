@@ -2,6 +2,7 @@ using backend.Helpers;
 using backend.Models.DTOs.Auth;
 using backend.Models.DTOs.LLM;
 using backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers
@@ -33,16 +34,11 @@ namespace backend.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpGet("me")]
         public async Task<ActionResult<AuthResponseDto>> GetCurrentUser()
         {
-            var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var (result, newToken, newRefreshToken) = await _authService.GetCurrentUserAsync(token, refreshToken);
-
-            if (newToken != null && newRefreshToken != null)
-                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
-
-            return Ok(result);
+            return Ok(await _authService.GetCurrentUserAsync());
         }
 
         [HttpPost("logout")]
@@ -57,16 +53,11 @@ namespace backend.Controllers
             return NoContent();
         }
 
+        [Authorize]
         [HttpPatch("update")]
         public async Task<ActionResult<AuthResponseDto>> UpdateUser([FromBody] UpdateUserDto updateUserDto)
         {
-            var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
-            var (result, newToken, newRefreshToken) = await _authService.UpdateCurrentUserAsync(updateUserDto, token, refreshToken);
-
-            if (newToken != null && newRefreshToken != null)
-                CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
-
-            return Ok(result);
+            return Ok(await _authService.UpdateCurrentUserAsync(updateUserDto));
         }
     }
 }
