@@ -76,6 +76,7 @@ All endpoints are under `/api`.
 Auth tokens are stored in HttpOnly cookies (`token`, `refreshToken`, `SameSite=Strict`) and sent automatically by the browser with `credentials: include`.
 No `Authorization` header is used.
 Expired or invalid tokens return `401`.
+Expired tokens are renewed with `/api/auth/refresh`, which the frontend calls on a `401` before retrying the request once.
 
 ### Auth
 
@@ -83,6 +84,7 @@ Expired or invalid tokens return `401`.
 |---|---|---|
 | POST | `/api/auth/register` | Register a new account |
 | POST | `/api/auth/login` | Log in |
+| POST | `/api/auth/refresh` | Refresh the session and update cookies |
 | GET | `/api/auth/me` | Get the current user's profile |
 | PATCH | `/api/auth/update` | Update display name and theme |
 | POST | `/api/auth/logout` | Log out and clear cookies |

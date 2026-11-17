@@ -10,6 +10,7 @@ namespace backend.Services
     {
         Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> RegisterAsync(RegisterDto registerDto);
         Task<(AuthResponseDto authResponseDto, string token, string refreshToken)> LoginAsync(LoginDto loginDto);
+        Task<(string token, string refreshToken)> RefreshSessionAsync(string token, string refreshToken);
         Task LogoutAsync(string token, string refreshToken);
         Task<AuthResponseDto> GetCurrentUserAsync();
         Task<AuthResponseDto> UpdateCurrentUserAsync(UpdateUserDto updateUserDto);
@@ -95,6 +96,16 @@ namespace backend.Services
             };
 
             return (authResponseDto, session.AccessToken!, session.RefreshToken!);
+        }
+
+        public async Task<(string token, string refreshToken)> RefreshSessionAsync(string token, string refreshToken)
+        {
+            var session = await SupabaseHelper.GetAuthApi().RefreshAccessToken(token, refreshToken);
+
+            if (session?.AccessToken == null || session.RefreshToken == null)
+                throw new UnauthorizedAccessException("Invalid or expired session");
+
+            return (session.AccessToken, session.RefreshToken);
         }
 
         public async Task LogoutAsync(string token, string refreshToken)

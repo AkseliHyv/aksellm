@@ -34,6 +34,15 @@ namespace backend.Controllers
             return Ok(result);
         }
 
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh()
+        {
+            var (token, refreshToken) = CookieHelper.GetTokensFromCookies(Request.Cookies);
+            var (newToken, newRefreshToken) = await _authService.RefreshSessionAsync(token, refreshToken);
+            CookieHelper.SetTokenCookies(Response, newToken, newRefreshToken);
+            return NoContent();
+        }
+
         [Authorize]
         [HttpGet("me")]
         public async Task<ActionResult<AuthResponseDto>> GetCurrentUser()

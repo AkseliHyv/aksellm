@@ -65,7 +65,7 @@ frontend/
       ChatPanel.tsx
       SideBar.tsx
     stores/               # useLLMStore, useModalStore, useToastStore, useUserStore
-    services/             # api.ts (fetch wrapper), authService.ts, llmService.ts
+    services/             # api.ts (fetch wrapper, session refresh), authService.ts, llmService.ts
     domain/               # TypeScript types and enums
     App.tsx
     ModalRenderer.tsx

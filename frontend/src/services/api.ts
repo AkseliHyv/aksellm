@@ -1,9 +1,27 @@
-async function send(path: string, options?: RequestInit): Promise<Response> {
+const noRefreshPaths = ["/api/auth/login", "/api/auth/register", "/api/auth/refresh"];
+
+let refreshing: Promise<boolean> | null = null;
+
+function refreshSession(): Promise<boolean> {
+    if (!refreshing) {
+        refreshing = fetch("/api/auth/refresh", { method: "POST", credentials: "include" })
+            .then((res) => res.ok)
+            .catch(() => false)
+            .finally(() => { refreshing = null; });
+    }
+
+    return refreshing;
+}
+
+async function send(path: string, options?: RequestInit, retry = true): Promise<Response> {
     const res = await fetch(path, {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         ...options,
     });
+
+    if (res.status === 401 && retry && !noRefreshPaths.includes(path) && await refreshSession())
+        return send(path, options, false);
 
     if (!res.ok) {
         const body = await res.json().catch(() => null);
