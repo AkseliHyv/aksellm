@@ -11,7 +11,7 @@ It uses Tailwind CSS v4 for styling and Zustand for state.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 22.12+
 - A running backend, see [Backend](BACKEND.md)
 
 ## Configure
@@ -53,6 +53,15 @@ npm run dev
 ```
 
 This makes the frontend run on the defined url, which is by default ``http://localhost:5173``.
+
+## Test
+
+```
+cd frontend
+npm test
+```
+
+The tests are next to the code they test, in `*.test.ts` files, and do not need a running backend.
 
 ## Project structure
 

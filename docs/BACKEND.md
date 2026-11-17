@@ -49,6 +49,16 @@ dotnet run
 
 This makes the backend run on the defined url, which is by default ``http://localhost:8000``.
 
+## Test
+
+```
+cd backend.Tests
+dotnet test
+```
+
+The tests run the API in memory and do not need Supabase or Ollama.
+They cover authentication, error handling and input validation.
+
 ## Project structure
 
 ```text
