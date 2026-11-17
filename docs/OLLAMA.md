@@ -95,7 +95,7 @@ Any existing llm configuration using a removed model will be unable to provide r
 |---|---|
 | 502 | The model has not been pulled, or Ollama returned another error |
 | 503 | Ollama is unreachable |
-| 500 | Ollama did not respond within 5 minutes |
+| 500 | Ollama did not respond within 4 minutes |
 
 ## Remaining work
 
